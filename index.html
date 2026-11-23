@@ -71,7 +71,7 @@ h2{font-size:18px;margin:18px 4px 6px}
 .cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cmp .kv.on{border-color:var(--blue)}
 .cmp .kv.on b{color:var(--blue)}
-.legend{font-size:12px;color:var(--muted);display:flex;gap:14px;margin-top:6px}
+.legend{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}.legend span{white-space:nowrap}
 .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line)}
@@ -100,6 +100,8 @@ input,select{width:100%;font-size:17px;padding:12px;border-radius:12px;border:1p
 .note{font-size:13px;color:var(--muted);margin:6px 2px}
 .setup{background:var(--fireSoft);border-color:var(--fire)}
 svg text{fill:var(--muted);font-size:10px}
+.chScroll{overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;scrollbar-width:none}.chScroll::-webkit-scrollbar{display:none}
+svg .vl{fill:var(--text);font-size:9.5px;font-weight:600}svg .gl{stroke:var(--line);stroke-width:1}
 svg.i{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em}
 .logo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(160deg,var(--fire2),var(--fire));color:#fff;font-size:20px;margin-right:10px;vertical-align:-7px;box-shadow:0 3px 10px rgba(232,89,12,.3)}
 nav button .i{display:flex;justify-content:center;margin-bottom:2px}
@@ -174,12 +176,13 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
     <div class="note" id="radNote"></div>
     <div class="cmp" id="radCmp"></div>
     <h2><span class="pas fire" data-ic="chart"></span>Évolution</h2>
-    <div class="seg" id="segGroup">
-      <button data-g="jour">Jours</button><button data-g="semaine">Semaines</button><button data-g="mois">Mois</button><button data-g="saison">Saisons</button>
+    <div class="seg" id="segView">
+      <button data-cv="aire">Tous les mois</button><button data-cv="cote">Côte à côte</button><button data-cv="sup">Superposées</button><button data-cv="cumul">Cumul</button>
     </div>
-    <div class="card" style="padding:10px 8px"><div id="chart"></div>
-      <div class="legend"><span><i class="dot" style="background:var(--fire)"></i>sacs</span><span><i class="dot" style="background:var(--blue)"></i>part du temps radiateurs allumés</span></div>
+    <div class="seg" id="segUnit" style="max-width:220px">
+      <button data-u="sacs">Sacs</button><button data-u="kg">kg</button><button data-u="eur">€</button>
     </div>
+    <div class="card" style="padding:12px 8px 8px"><div id="chartLeg" class="legend" style="margin:0 6px 6px"></div><div id="chart"></div><div class="note" id="chartHint" style="margin:4px 6px 0"></div></div>
     <h2><span class="pas grey" data-ic="calendar"></span>Par mois</h2>
     <div class="card" style="padding:6px 12px"><table id="monthTable"></table></div>
     <h2><span class="pas brown" data-ic="truck"></span>Achats</h2>
@@ -264,7 +267,7 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
 <div id="toast"><span id="toastTx"></span><button id="toastBtn"></button></div>
 
 <script>
-const VERSION = '1.1';
+const VERSION = '1.2';
 const ICONS = {
   flame:'<path d="M12 3c.8 3.2 5 5.6 5 10.2a5 5 0 0 1-10 0c0-2.1 1-3.6 2.1-4.6.2 1.6 1 2.6 2.1 3C10.9 9 11 6 12 3z"/><path d="M12 21a2.2 2.2 0 0 1-2.2-2.2c0-1.4 1.2-2.2 2.2-3.6 1 1.4 2.2 2.2 2.2 3.6A2.2 2.2 0 0 1 12 21z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -525,7 +528,6 @@ function periodRange(){
 }
 function renderStats(){
   document.querySelectorAll('#segPeriod button').forEach(b=>b.classList.toggle('on', b.dataset.p===period));
-  document.querySelectorAll('#segGroup button').forEach(b=>b.classList.toggle('on', b.dataset.g===group));
   const [a,b] = periodRange();
   const sc = sacs().filter(e=>e.ts>=a && e.ts<=b);
   const n = sc.reduce((s,e)=>s+e.n,0);
@@ -586,23 +588,105 @@ function buckets(){
   }
   return out;
 }
+let cview = cfg.cview || 'aire', unit = cfg.unit || 'sacs';
+const MN = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+const MS = ['sep','oct','nov','déc','jan','fév','mar','avr','mai','jun','jul','aoû'];
+const fu = v => unit==='eur' ? nf(v,0)+' €' : nf(v,0);
+function mVal(a, cm){ const d=new Date(a), b=+new Date(d.getFullYear(), d.getMonth()+1, 1);
+  if(unit==='eur') return costBetween(a,b,cm); const n = sumSacs(a,b); return unit==='kg' ? n*poids() : n; }
+function niceTop(mx){ if(mx<=0) return 4; const raw = mx/4, p = Math.pow(10, Math.floor(Math.log10(raw))); const st = [1,2,2.5,5,10].map(k=>k*p).find(k=>k>=raw); return st*4; }
+function smooth(pts, base){
+  if(pts.length<2) return pts.length ? `M${pts[0][0]},${pts[0][1]}` : '';
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0 = pts[i-1]||pts[i], p1 = pts[i], p2 = pts[i+1], p3 = pts[i+2]||p2;
+    const c1 = [p1[0]+(p2[0]-p0[0])/6, Math.min(base, p1[1]+(p2[1]-p0[1])/6)], c2 = [p2[0]-(p3[0]-p1[0])/6, Math.min(base, p2[1]-(p3[1]-p1[1])/6)];
+    d += ` C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+const SCOL = ['#e8590c','#8a8780','#c3bfb6'], SDASH = ['', '5 4', '2 4'];
+function legend(items){ $('chartLeg').innerHTML = items.map(([t,c,dash])=>`<span><i class="dot" style="background:${c}${dash?';opacity:.8':''}"></i>${t}</span>`).join(''); }
+function yAxis(top, H, pt, pb){
+  let s = `<svg width="30" height="${H}" style="flex:none">`;
+  for(let i=0;i<=4;i++){ const y = pt+(H-pt-pb)*(1-i/4); s += `<text x="26" y="${y+3}" text-anchor="end">${unit==='eur'?nf(top*i/4,0):nf(top*i/4,0)}</text>`; }
+  return s + '</svg>';
+}
 function renderChart(){
-  const bs = buckets(), now = Date.now();
-  bs.forEach(x=>{ x.v = sumSacs(x.a,x.b); const end=Math.min(x.b,now); x.r = end>x.a ? onMs(x.a,end)/(end-x.a) : 0; });
-  const W=340,H=170,pl=24,pb=22,pt=10, max=Math.max(1,...bs.map(x=>x.v));
-  const step = Math.ceil(max/4), top = step*4;
-  const bw = (W-pl-4)/bs.length;
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Sacs consommés">`;
-  for(let i=0;i<=4;i++){ const y = pt+(H-pt-pb)*(1-i/4);
-    s += `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${pl-4}" y="${y+3}" text-anchor="end">${step*i}</text>`; }
-  bs.forEach((x,i)=>{
-    const h = (H-pt-pb)*x.v/top, X = pl+4+i*bw+bw*0.15, w = bw*0.7, Y = H-pb-h;
-    if(x.v) s += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" rx="3" fill="var(--fire)"><title>${x.v} sac(s)</title></rect>`;
-    if(x.v && bs.length<=12) s += `<text x="${X+w/2}" y="${Y-3}" text-anchor="middle" style="fill:var(--text)">${x.v}</text>`;
-    if(x.r>0) s += `<rect x="${X}" y="${H-pb+3}" width="${w*x.r}" height="4" rx="2" fill="var(--blue)"/>`;
-    if(x.l){ const last=i===bs.length-1; s += `<text x="${last?W-1:X+w/2}" y="${H-2}" text-anchor="${last?'end':'middle'}">${x.l}</text>`; }
+  document.querySelectorAll('#segView button').forEach(b=>b.classList.toggle('on', b.dataset.cv===cview));
+  document.querySelectorAll('#segUnit button').forEach(b=>b.classList.toggle('on', b.dataset.u===unit));
+  const sc = sacs(); $('chartHint').textContent = '';
+  if(!sc.length){ $('chart').innerHTML = '<div class="empty">Pas encore de données</div>'; $('chartLeg').innerHTML=''; return; }
+  const cm = costMap(), now = Date.now();
+  if(cview==='aire') return chartAire(cm, sc);
+  const curY = new Date(seasonStart(now)).getFullYear(), firstY = new Date(seasonStart(sc[0].ts)).getFullYear();
+  const years = []; for(let y=Math.max(firstY, curY-2); y<=curY; y++) years.push(y);
+  const series = years.map(y=>{ const vals=[]; for(let i=0;i<12;i++){ const a = +new Date(y,8+i,1); vals.push(a>now ? null : mVal(a,cm)); } return {y, vals}; }).reverse(); // [courante, précédente, …]
+  if(cview==='cumul') series.forEach(s=>{ let t=0; s.vals = s.vals.map(v=> v==null ? null : (t+=v)); });
+  legend(series.map((s,i)=>[s.y+'-'+String(s.y+1).slice(2)+(i?'':' (en cours)'), SCOL[i], SDASH[i]]));
+  const H=200, pt=20, pb=22, W=310, pw=W-6;
+  const mx = Math.max(...series.flatMap(s=>s.vals).filter(v=>v!=null)), top = niceTop(mx);
+  const Y = v => pt + (H-pt-pb)*(1 - v/top), gw = pw/12, X = i => 3 + gw*i + gw/2;
+  let g = '';
+  for(let i=0;i<=4;i++){ const y = pt+(H-pt-pb)*(1-i/4); g += `<line class="gl" x1="0" x2="${W}" y1="${y}" y2="${y}"/>`; }
+  MS.forEach((m,i)=> g += `<text x="${X(i)}" y="${H-6}" text-anchor="middle">${m}</text>`);
+  let best = null; series.forEach((s,si)=>s.vals.forEach((v,i)=>{ if(v!=null && (!best || v>best.v)) best = {v,i,si}; }));
+  if(cview==='cote'){
+    const k = series.length, bw = Math.min(11, gw*0.8/k), ord = [...series].reverse();
+    ord.forEach((s,j)=>{ const si = series.indexOf(s);
+      s.vals.forEach((v,i)=>{ if(!v) return; const x = X(i) - (k*bw)/2 + j*bw, y = Y(v);
+        g += `<rect x="${x+0.5}" y="${y}" width="${bw-1}" height="${H-pb-y}" rx="2" fill="${SCOL[si]}"/>`;
+        const isB = best && best.si===si && best.i===i;
+        if(si===0 || isB || series[0].vals[i]==null) g += `<text class="vl" x="${x+bw/2}" y="${y-3}" text-anchor="middle" style="font-size:8.5px">${isB?'★':''}${fu(v)}</text>`; });
+    });
+  } else {
+    series.slice().reverse().forEach(s=>{ const si = series.indexOf(s);
+      const pts = s.vals.map((v,i)=> v==null ? null : [X(i), Y(v)]).filter(Boolean);
+      g += `<path d="${smooth(pts, H-pb)}" fill="none" stroke="${SCOL[si]}" stroke-width="${si?2:2.6}" stroke-dasharray="${SDASH[si]}" stroke-linecap="round"/>`;
+      pts.forEach((p,j)=>{ g += `<circle cx="${p[0]}" cy="${p[1]}" r="${si?2.5:3.5}" fill="${SCOL[si]}"/>`; });
+      if(cview==='cumul' && pts.length){ const L = pts[pts.length-1], v = s.vals.filter(x=>x!=null).pop();
+        g += `<text class="vl" x="${Math.min(L[0], W-14)}" y="${L[1]-7}" text-anchor="middle" style="fill:${SCOL[si]}">${fu(v)}</text>`; }
+      if(cview==='sup' && si===0) s.vals.forEach((v,i)=>{ if(v) g += `<text class="vl" x="${X(i)}" y="${Y(v)-7}" text-anchor="middle">${fu(v)}</text>`; });
+    });
+    if(cview==='sup' && best && best.si!==0) g += `<text class="vl" x="${X(best.i)}" y="${Y(best.v)-7}" text-anchor="middle" style="fill:var(--muted)">★${fu(best.v)}</text>`;
+    if(cview==='cumul' && series[1]){
+      const m = new Date(now).getMonth(), idx = (m+4)%12, d = new Date(now);
+      const prev = sumSacs(+new Date(series[1].y,8,1), +new Date(d.getFullYear()-1, d.getMonth(), d.getDate()+1)), cur = sumSacs(seasonStart(now), now+1);
+      const diff = cur - prev;
+      $('chartHint').textContent = `À date égale : ${cur} sacs contre ${prev} l'an dernier (${diff>0?'+':''}${diff}).`;
+    }
+  }
+  $('chart').innerHTML = `<div style="display:flex">${yAxis(top,H,pt,pb)}<svg viewBox="0 0 ${W} ${H}" width="100%" style="flex:1">${g}</svg></div>`;
+  if(cview==='cote' && best) $('chartHint').textContent = `★ Mois record : ${MN[(best.i+8)%12]} ${series[best.si].y + (best.i>=4?1:0)} (${fu(best.v)}).`;
+}
+function chartAire(cm, sc){
+  const now = Date.now(), months = [];
+  let d = new Date(new Date(sc[0].ts).getFullYear(), new Date(sc[0].ts).getMonth(), 1);
+  while(+d <= now){ months.push(+d); d = new Date(d.getFullYear(), d.getMonth()+1, 1); }
+  const vals = months.map(a=>mVal(a,cm)), curS = seasonStart(now);
+  const H=200, pt=20, pb=30, step=46, W = Math.max(300, months.length*step + 16);
+  const top = niceTop(Math.max(...vals)), Y = v => pt + (H-pt-pb)*(1 - v/top), X = i => 18 + i*step;
+  const base = H-pb; let g = '';
+  for(let i=0;i<=4;i++){ const y = pt+(H-pt-pb)*(1-i/4); g += `<line class="gl" x1="0" x2="${W}" y1="${y}" y2="${y}"/>`; }
+  const pts = vals.map((v,i)=>[X(i), Y(v)]), line = smooth(pts, base);
+  const iCur = months.findIndex(a=>a>=curS);
+  g += `<path d="${line} L${pts[pts.length-1][0]},${base} L${pts[0][0]},${base} Z" fill="#e8590c" fill-opacity=".14"/>`;
+  g += `<path d="${line}" fill="none" stroke="#e8590c" stroke-width="2.4" stroke-linecap="round"/>`;
+  const mx = Math.max(...vals);
+  months.forEach((a,i)=>{
+    const v = vals[i], dd = new Date(a), cur = a >= curS, ss = seasonStart(a);
+    g += `<circle cx="${X(i)}" cy="${Y(v)}" r="3.5" fill="${cur?'#e8590c':'#8a8780'}" stroke="var(--card)" stroke-width="1.5"/>`;
+    if(v) g += `<text class="vl" x="${X(i)}" y="${Y(v)-8}" text-anchor="middle">${v===mx?'★':''}${fu(v)}</text>`;
+    g += `<text x="${X(i)}" y="${H-16}" text-anchor="middle">${MN[dd.getMonth()]}</text>`;
+    if(dd.getMonth()===8 || i===0) g += `<text x="${X(i)}" y="${H-4}" text-anchor="middle" style="font-weight:700">${dd.getFullYear()}</text>`;
+    if(dd.getMonth()===8 && i>0) g += `<line x1="${X(i)-step/2}" x2="${X(i)-step/2}" y1="${pt-6}" y2="${base}" stroke="var(--muted)" stroke-dasharray="2 3" stroke-width="1"/>`;
+    const end = Math.min(+new Date(dd.getFullYear(), dd.getMonth()+1, 1), now), r = onMs(a,end)/(end-a);
+    if(r>0) g += `<rect x="${X(i)-12}" y="${base+3}" width="${24*r}" height="3" rx="1.5" fill="var(--blue)"/>`;
   });
-  $('chart').innerHTML = s+'</svg>';
+  legend([['Saison en cours','#e8590c'],['Saisons passées','#8a8780'],['Radiateurs allumés','var(--blue)']]);
+  $('chart').innerHTML = `<div style="display:flex">${yAxis(top,H,pt,pb)}<div class="chScroll" id="chScroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg></div></div>`;
+  const scr = $('chScroll'); scr.scrollLeft = scr.scrollWidth;
+  $('chartHint').textContent = months.length > 6 ? '← Glisse le graphique pour remonter dans le temps' : '';
 }
 function renderMonths(){
   const all = alive(); if(!all.length){ $('monthTable').innerHTML='<tr><td class="empty">Pas encore de données</td></tr>'; return; }
@@ -858,7 +942,8 @@ function goView(v){
 }
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>goView(b.dataset.v));
 document.querySelectorAll('#segPeriod button').forEach(b=>b.onclick=()=>{ period=b.dataset.p; renderStats(); });
-document.querySelectorAll('#segGroup button').forEach(b=>b.onclick=()=>{ group=b.dataset.g; renderStats(); });
+document.querySelectorAll('#segView button').forEach(b=>b.onclick=()=>{ cview=b.dataset.cv; cfg.cview=cview; saveCfg(); renderChart(); });
+document.querySelectorAll('#segUnit button').forEach(b=>b.onclick=()=>{ unit=b.dataset.u; cfg.unit=unit; saveCfg(); renderChart(); });
 document.querySelectorAll('#segHist button').forEach(b=>b.onclick=()=>{ histF=b.dataset.h; renderHist(); });
 
 function render(){
