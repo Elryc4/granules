@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Granulés">
+<meta name="theme-color" content="#1b1613">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Granulés</title>
+<style>
+:root{
+  --bg:#f6f2ee;--card:#fff;--text:#231c17;--muted:#7b6f66;--line:#e7dfd8;
+  --fire:#e8590c;--fire2:#ff8a3d;--fireSoft:#fde8dc;--blue:#2b7de9;--blueSoft:#dceafd;
+  --ok:#2f9e44;--warn:#e03131;--warnSoft:#ffe3e3;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1b1613;--card:#27201b;--text:#f3ece6;--muted:#a3968c;--line:#3a312a;
+  --fireSoft:#47271a;--blueSoft:#1d3047;--warnSoft:#4a2020;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(70px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px}
+header h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.3px}
+#syncBadge{font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:20px;padding:5px 10px;cursor:pointer}
+main{padding:6px 14px 20px;max-width:560px;margin:0 auto}
+.view{display:none}.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.stock{display:flex;align-items:baseline;gap:10px}
+.stock .big{font-size:56px;font-weight:800;line-height:1;letter-spacing:-1px}
+.stock .unit{font-size:20px;font-weight:600;color:var(--muted)}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.card.alert{background:var(--warnSoft);border-color:var(--warn)}
+.card.alert .big{color:var(--warn)}
+.btnSac{display:block;width:100%;border:0;border-radius:22px;padding:30px 10px;margin:14px 0 6px;
+  background:linear-gradient(160deg,var(--fire2),var(--fire));color:#fff;font-size:26px;font-weight:800;
+  box-shadow:0 8px 22px rgba(232,89,12,.35);cursor:pointer}
+.btnSac:active{transform:scale(.98)}
+.btnSac small{display:block;font-size:14px;font-weight:500;opacity:.9;margin-top:4px}
+.last{text-align:center;color:var(--muted);font-size:14px;margin-bottom:6px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center}
+.mini b{display:block;font-size:22px}
+.mini span{font-size:12px;color:var(--muted)}
+.rad{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rad .st{font-weight:700;font-size:17px}
+.rad .st.on{color:var(--blue)}
+.btn{border:0;border-radius:14px;padding:12px 16px;font-size:16px;font-weight:700;cursor:pointer;background:var(--line);color:var(--text)}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.fire{background:var(--fire);color:#fff}
+.btn.red{background:var(--warn);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn.wide{width:100%;margin-top:10px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--muted);padding:9px 0 7px;font-size:11px;cursor:pointer}
+nav button .i{display:block;font-size:22px;line-height:1.1}
+nav button.active{color:var(--fire);font-weight:700}
+h2{font-size:18px;margin:18px 4px 6px}
+.seg{display:flex;background:var(--line);border-radius:12px;padding:3px;gap:3px;margin:8px 0}
+.seg button{flex:1;border:0;background:none;border-radius:9px;padding:8px 2px;font-size:13px;color:var(--text);cursor:pointer}
+.seg button.on{background:var(--card);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+.kv b{display:block;font-size:21px}
+.kv span{font-size:12px;color:var(--muted)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp .kv.on{border-color:var(--blue)}
+.cmp .kv.on b{color:var(--blue)}
+.legend{font-size:12px;color:var(--muted);display:flex;gap:14px;margin-top:6px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:12px}
+.day{font-size:13px;color:var(--muted);font-weight:700;margin:16px 4px 6px;text-transform:capitalize}
+.item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin:6px 0;cursor:pointer}
+.item .ic{font-size:22px;width:30px;text-align:center}
+.item .tx{flex:1}
+.item .tx small{display:block;color:var(--muted);font-size:12px}
+.item .tm{color:var(--muted);font-size:14px}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 2px 4px}
+input,select{width:100%;font-size:17px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);-webkit-appearance:none;appearance:none}
+.sheetBg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheetBg.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;animation:up .2s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+.sheet h3{margin:0 0 4px;font-size:20px}
+.sheet .btns{display:flex;gap:10px;margin-top:18px}
+.sheet .btns .btn{flex:1}
+.total{margin-top:10px;font-weight:700;text-align:right}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
+  background:#231c17;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:14px;align-items:center;transition:.2s;z-index:30;max-width:92vw;font-size:15px}
+#toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+#toast button{background:none;border:0;color:var(--fire2);font-weight:800;font-size:15px;cursor:pointer}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+.note{font-size:13px;color:var(--muted);margin:6px 2px}
+.setup{background:var(--fireSoft);border-color:var(--fire)}
+svg text{fill:var(--muted);font-size:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔥 Granulés</h1>
+  <div id="syncBadge" onclick="sync(true)">…</div>
+</header>
+<main>
+  <!-- ACCUEIL -->
+  <section class="view active" id="v-home">
+    <div class="card setup" id="setupCard" style="display:none">
+      <b>Bienvenue !</b>
+      <div class="sub">Commence par indiquer combien de sacs tu as en stock aujourd'hui.</div>
+      <button class="btn fire wide" onclick="sheetInventaire()">Indiquer mon stock</button>
+    </div>
+    <div class="card" id="stockCard" onclick="sheetInventaire()">
+      <div class="sub" style="margin:0 0 6px">Stock</div>
+      <div class="stock"><span class="big" id="stockN">0</span><span class="unit">sacs</span></div>
+      <div class="sub" id="stockSub"></div>
+    </div>
+    <button class="btnSac" id="btnSac" onclick="addSac()">＋ 1 sac dans le poêle<small>un appui = un sac de 15 kg</small></button>
+    <div class="last" id="lastSac"></div>
+    <div class="row">
+      <div class="mini"><b id="todayN">0</b><span>aujourd'hui</span></div>
+      <div class="mini"><b id="weekN">0</b><span>7 derniers jours</span></div>
+      <div class="mini"><b id="rateN">–</b><span>sacs / jour</span></div>
+    </div>
+    <div class="card rad">
+      <div><div class="sub" style="margin:0">Radiateurs électriques</div><div class="st" id="radSt">Éteints</div><div class="sub" id="radSince"></div></div>
+      <button class="btn blue" id="radBtn" onclick="sheetRad()">Allumer</button>
+    </div>
+    <button class="btn ghost wide" onclick="sheetAchat()">🚚 Livraison / achat de sacs</button>
+  </section>
+
+  <!-- STATS -->
+  <section class="view" id="v-stats">
+    <div class="seg" id="segPeriod">
+      <button data-p="7">7 jours</button><button data-p="30">30 jours</button><button data-p="saison">Saison</button><button data-p="tout">Tout</button>
+    </div>
+    <div class="grid" id="kpis"></div>
+    <h2>Radiateurs électriques</h2>
+    <div class="note" id="radNote"></div>
+    <div class="cmp" id="radCmp"></div>
+    <h2>Évolution</h2>
+    <div class="seg" id="segGroup">
+      <button data-g="jour">Jours</button><button data-g="semaine">Semaines</button><button data-g="mois">Mois</button><button data-g="saison">Saisons</button>
+    </div>
+    <div class="card" style="padding:10px 8px"><div id="chart"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--fire)"></i>sacs</span><span><i class="dot" style="background:var(--blue)"></i>part du temps radiateurs allumés</span></div>
+    </div>
+    <h2>Par mois</h2>
+    <div class="card" style="padding:6px 12px"><table id="monthTable"></table></div>
+    <h2>Achats</h2>
+    <div class="card" style="padding:6px 12px"><table id="buyTable"></table></div>
+  </section>
+
+  <!-- HISTORIQUE -->
+  <section class="view" id="v-hist">
+    <div class="seg" id="segHist">
+      <button data-h="all">Tout</button><button data-h="sac">Sacs</button><button data-h="achat">Achats</button><button data-h="rad">Radiateurs</button>
+    </div>
+    <div id="histList"></div>
+  </section>
+
+  <!-- REGLAGES -->
+  <section class="view" id="v-set">
+    <div class="card">
+      <b>Moi</b>
+      <label>Prénom (affiché dans l'historique)</label>
+      <input id="sQui" placeholder="ex. Eric" onchange="cfg.qui=this.value.trim();saveCfg()">
+    </div>
+    <div class="card">
+      <b>Stock</b>
+      <label>Alerte quand le stock descend à (sacs)</label>
+      <input id="sSeuil" type="number" inputmode="numeric" min="0" onchange="setSetting('seuil',+this.value)">
+      <label>Poids d'un sac (kg)</label>
+      <input id="sPoids" type="number" inputmode="decimal" min="1" onchange="setSetting('poids',+this.value)">
+      <button class="btn ghost wide" onclick="sheetInventaire()">Corriger le stock (après recomptage)</button>
+    </div>
+    <div class="card">
+      <b>Synchronisation GitHub</b>
+      <div class="note">Les données sont rangées dans un dépôt privé, partagé par les deux iPhone.</div>
+      <label>Compte GitHub</label>
+      <input id="sOwner" placeholder="Elryc4" autocapitalize="off" autocorrect="off">
+      <label>Dépôt des données (privé)</label>
+      <input id="sRepo" placeholder="granules-data" autocapitalize="off" autocorrect="off">
+      <label>Clé d'accès (jeton)</label>
+      <input id="sToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocorrect="off">
+      <button class="btn fire wide" onclick="saveSync()">Enregistrer et synchroniser</button>
+      <div class="note" id="syncInfo"></div>
+    </div>
+    <div class="card">
+      <b>Sauvegarde</b>
+      <button class="btn ghost wide" onclick="exportJson()">Exporter une sauvegarde</button>
+      <button class="btn ghost wide" onclick="document.getElementById('imp').click()">Importer une sauvegarde</button>
+      <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importJson(this)">
+    </div>
+    <div class="card">
+      <b>Appli</b>
+      <div class="note">Version <span id="ver"></span></div>
+      <button class="btn ghost wide" onclick="forceUpdate()">Rechercher une mise à jour</button>
+    </div>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-v="home" class="active"><span class="i">🔥</span>Accueil</button>
+  <button data-v="stats"><span class="i">📊</span>Stats</button>
+  <button data-v="hist"><span class="i">📋</span>Historique</button>
+  <button data-v="set"><span class="i">⚙️</span>Réglages</button>
+</nav>
+
+<div class="sheetBg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
+<div id="toast"><span id="toastTx"></span><button id="toastBtn"></button></div>
+
+<script>
+const VERSION = '1.0';
+const DAY = 86400000, HOUR = 3600000;
+const $ = id => document.getElementById(id);
+
+/* ---------- Données ---------- */
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+let data = load('gr_data') || {events:[], settings:{seuil:10, poids:15, u:0}};
+let cfg  = load('gr_cfg')  || {owner:'', repo:'granules-data', token:'', qui:'', dirty:false, lastSync:0};
+if(!data.settings) data.settings = {seuil:10, poids:15, u:0};
+
+function saveData(markDirty=true){
+  localStorage.setItem('gr_data', JSON.stringify(data));
+  if(markDirty){ cfg.dirty = true; saveCfg(); scheduleSync(); }
+}
+function saveCfg(){ localStorage.setItem('gr_cfg', JSON.stringify(cfg)); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function alive(){ return data.events.filter(e=>!e.del).sort((a,b)=>a.ts-b.ts); }
+function addEvent(e){
+  const ev = Object.assign({id:uid(), by:cfg.qui||'', u:Date.now()}, e);
+  data.events.push(ev); saveData(); render(); return ev;
+}
+function updEvent(id, patch){
+  const e = data.events.find(x=>x.id===id); if(!e) return;
+  Object.assign(e, patch, {u:Date.now()}); saveData(); render();
+}
+function setSetting(k, v){
+  if(!(v>0) && k!=='seuil') return;
+  data.settings[k] = v; data.settings.u = Date.now(); saveData(); render();
+}
+const S = () => data.settings;
+const poids = () => S().poids || 15;
+
+/* ---------- Calculs ---------- */
+function stockNow(){
+  let s = 0;
+  for(const e of alive()){
+    if(e.t==='inv') s = e.n;
+    else if(e.t==='achat') s += e.n;
+    else if(e.t==='sac') s -= e.n;
+  }
+  return s;
+}
+function sacs(){ return alive().filter(e=>e.t==='sac'); }
+function radEvents(){ return alive().filter(e=>e.t==='on'||e.t==='off'); }
+function radState(){ const r = radEvents(); return r.length ? r[r.length-1] : null; }
+// millisecondes radiateurs allumés entre a et b
+function onMs(a, b){
+  let tot = 0, start = null;
+  for(const e of radEvents()){
+    if(e.t==='on' && start===null) start = e.ts;
+    else if(e.t==='off' && start!==null){ tot += overlap(start, e.ts, a, b); start = null; }
+  }
+  if(start!==null) tot += overlap(start, Date.now(), a, b);
+  return tot;
+}
+function overlap(s1,e1,s2,e2){ return Math.max(0, Math.min(e1,e2) - Math.max(s1,s2)); }
+function sumSacs(a, b){ return sacs().filter(e=>e.ts>=a && e.ts<b).reduce((s,e)=>s+e.n,0); }
+function avgPrice(){
+  const ach = alive().filter(e=>e.t==='achat' && e.p>0);
+  const n = ach.reduce((s,e)=>s+e.n,0);
+  return n ? ach.reduce((s,e)=>s+e.n*e.p,0)/n : null;
+}
+function recentRate(){
+  // sacs/jour sur les 14 derniers jours (ou depuis le 1er sac si plus récent)
+  const sc = sacs(); if(sc.length<2) return null;
+  const now = Date.now(), from = Math.max(now-14*DAY, sc[0].ts);
+  const days = (now-from)/DAY; if(days < 1) return null;
+  return sumSacs(from, now+1)/days;
+}
+function seasonStart(ts){ const d=new Date(ts); const y = d.getMonth()>=8 ? d.getFullYear() : d.getFullYear()-1; return new Date(y,8,1).getTime(); }
+function seasonLabel(ts){ const y=new Date(seasonStart(ts)).getFullYear(); return y+'-'+String(y+1).slice(2); }
+
+/* ---------- Format ---------- */
+const nf = (n, d=1) => (n==null||isNaN(n)) ? '–' : n.toLocaleString('fr-FR',{maximumFractionDigits:d});
+const eur = n => (n==null||isNaN(n)) ? '–' : n.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+const esc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function hm(ts){ return new Date(ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function dayLabel(ts){
+  const d = new Date(ts), t = new Date(); t.setHours(0,0,0,0);
+  const d0 = new Date(d); d0.setHours(0,0,0,0);
+  const diff = Math.round((t-d0)/DAY);
+  if(diff===0) return "aujourd'hui"; if(diff===1) return 'hier';
+  return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long', year: d.getFullYear()!==t.getFullYear()?'numeric':undefined});
+}
+function ago(ts){
+  const m = Math.round((Date.now()-ts)/60000);
+  if(m<1) return "à l'instant"; if(m<60) return 'il y a '+m+' min';
+  const h = Math.floor(m/60); if(h<48) return 'il y a '+h+' h'+(h<10 && m%60 ? String(m%60).padStart(2,'0') : '');
+  return 'il y a '+Math.floor(h/24)+' j';
+}
+function dur(ms){
+  const h = ms/HOUR; if(h<48) return nf(h,0)+' h';
+  return nf(h/24,1)+' j';
+}
+function toInput(ts){ const d=new Date(ts); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+function fromInput(v){ const m = v.match(/(\d+)-(\d+)-(\d+)T(\d+):(\d+)/); if(!m) return Date.now(); return new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]).getTime(); }
+
+/* ---------- Rendu accueil ---------- */
+function renderHome(){
+  const st = stockNow(), rate = recentRate();
+  const hasStock = alive().some(e=>e.t==='inv'||e.t==='achat');
+  $('setupCard').style.display = hasStock ? 'none' : 'block';
+  $('stockN').textContent = st;
+  let sub = nf(st*poids(),0)+' kg';
+  if(rate && rate>0) sub += ' · environ '+nf(st/rate,0)+' jours restants';
+  if(st <= S().seuil && hasStock) sub += ' · ⚠️ pense à recommander';
+  $('stockSub').textContent = sub;
+  $('stockCard').classList.toggle('alert', hasStock && st <= S().seuil);
+  $('btnSac').querySelector('small').textContent = 'un appui = un sac de '+nf(poids())+' kg';
+
+  const sc = sacs(), last = sc[sc.length-1];
+  $('lastSac').textContent = last ? 'Dernier sac : '+dayLabel(last.ts)+' à '+hm(last.ts)+' ('+ago(last.ts)+')'+(last.by?' · '+last.by:'') : 'Aucun sac saisi pour l\'instant';
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  $('todayN').textContent = sumSacs(t0.getTime(), Date.now()+1);
+  $('weekN').textContent = sumSacs(Date.now()-7*DAY, Date.now()+1);
+  $('rateN').textContent = rate ? nf(rate) : '–';
+
+  const r = radState(), on = r && r.t==='on';
+  $('radSt').textContent = on ? 'Allumés' : 'Éteints';
+  $('radSt').className = 'st' + (on?' on':'');
+  $('radSince').textContent = r ? 'depuis '+dayLabel(r.ts)+' '+hm(r.ts) : '';
+  $('radBtn').textContent = on ? 'Couper' : 'Allumer';
+  $('radBtn').className = 'btn ' + (on ? 'ghost' : 'blue');
+}
+
+/* ---------- Actions ---------- */
+let undoTimer;
+function addSac(){
+  const ev = addEvent({t:'sac', ts:Date.now(), n:1});
+  if(navigator.vibrate) navigator.vibrate(30);
+  toast('1 sac ajouté · stock '+stockNow(), 'Annuler', ()=>updEvent(ev.id,{del:true}));
+}
+function toast(msg, btn, fn){
+  $('toastTx').textContent = msg;
+  $('toastBtn').textContent = btn||''; $('toastBtn').style.display = btn?'':'none';
+  $('toastBtn').onclick = ()=>{ fn&&fn(); $('toast').classList.remove('show'); };
+  $('toast').classList.add('show');
+  clearTimeout(undoTimer); undoTimer = setTimeout(()=>$('toast').classList.remove('show'), 5000);
+}
+
+/* ---------- Fenêtres ---------- */
+function openSheet(html, buttons){
+  $('sheet').innerHTML = html + '<div class="btns" id="sheetBtns"></div>';
+  buttons.forEach(b=>{
+    const el = document.createElement('button');
+    el.className = 'btn '+(b.cls||''); el.textContent = b.label;
+    el.onclick = ()=>{ if(b.fn && b.fn()===false) return; closeSheet(); };
+    $('sheetBtns').appendChild(el);
+  });
+  $('sheetBg').classList.add('open');
+}
+function closeSheet(){ $('sheetBg').classList.remove('open'); }
+$('sheetBg').addEventListener('click', e=>{ if(e.target.id==='sheetBg') closeSheet(); });
+
+function lastAchat(){ const a = alive().filter(e=>e.t==='achat'); return a[a.length-1]; }
+function sheetAchat(ev){
+  const la = lastAchat();
+  const n = ev ? ev.n : (la ? la.n : 66), p = ev ? ev.p : (la ? la.p : '');
+  openSheet(`<h3>${ev?'Modifier l\'achat':'🚚 Livraison de sacs'}</h3>
+    <label>Nombre de sacs</label><input id="fN" type="number" inputmode="numeric" min="1" value="${n}">
+    <label>Prix d'un sac (€)</label><input id="fP" type="number" inputmode="decimal" step="0.01" min="0" value="${p}" placeholder="ex. 6,90">
+    <label>Date</label><input id="fD" type="datetime-local" value="${toInput(ev?ev.ts:Date.now())}">
+    <div class="total" id="fT"></div>`,
+    [{label:'Annuler'}, ...(ev?[{label:'Supprimer',cls:'red',fn:()=>delAsk(ev)}]:[]),
+     {label:'Enregistrer', cls:'fire', fn:()=>{
+        const nn = parseInt($('fN').value), pp = parseFloat(String($('fP').value).replace(',','.'));
+        if(!(nn>0)){ alert('Indique le nombre de sacs'); return false; }
+        if(!(pp>=0)){ alert('Indique le prix d\'un sac'); return false; }
+        const o = {n:nn, p:pp, ts:fromInput($('fD').value)};
+        if(ev) updEvent(ev.id, o); else { addEvent(Object.assign({t:'achat'}, o)); toast(nn+' sacs ajoutés au stock'); }
+     }}]);
+  const upd = ()=>{ const nn=parseInt($('fN').value)||0, pp=parseFloat(String($('fP').value).replace(',','.'))||0; $('fT').textContent = pp? 'Total : '+eur(nn*pp) : ''; };
+  $('fN').oninput = upd; $('fP').oninput = upd; upd();
+}
+function sheetInventaire(ev){
+  openSheet(`<h3>${ev?'Modifier le comptage':'Stock compté'}</h3>
+    <div class="note">Indique le nombre de sacs réellement présents. Le stock repart de ce chiffre.</div>
+    <label>Nombre de sacs en stock</label><input id="fN" type="number" inputmode="numeric" min="0" value="${ev?ev.n:stockNow()}">
+    <label>Date</label><input id="fD" type="datetime-local" value="${toInput(ev?ev.ts:Date.now())}">`,
+    [{label:'Annuler'}, ...(ev?[{label:'Supprimer',cls:'red',fn:()=>delAsk(ev)}]:[]),
+     {label:'Enregistrer', cls:'fire', fn:()=>{
+        const nn = parseInt($('fN').value); if(!(nn>=0)){ alert('Nombre invalide'); return false; }
+        const o = {n:nn, ts:fromInput($('fD').value)};
+        if(ev) updEvent(ev.id,o); else addEvent(Object.assign({t:'inv'},o));
+     }}]);
+}
+function sheetRad(ev){
+  const on = radState() && radState().t==='on';
+  const t = ev ? ev.t : (on ? 'off' : 'on');
+  openSheet(`<h3>${ev?'Modifier':'Radiateurs électriques'}</h3>
+    <label>Action</label><select id="fT"><option value="on" ${t==='on'?'selected':''}>Allumage</option><option value="off" ${t==='off'?'selected':''}>Coupure</option></select>
+    <label>Heure</label><input id="fD" type="datetime-local" value="${toInput(ev?ev.ts:Date.now())}">`,
+    [{label:'Annuler'}, ...(ev?[{label:'Supprimer',cls:'red',fn:()=>delAsk(ev)}]:[]),
+     {label: ev?'Enregistrer':(t==='on'?'Allumer':'Couper'), cls:'blue', fn:()=>{
+        const o = {t:$('fT').value, ts:fromInput($('fD').value)};
+        if(ev) updEvent(ev.id,o); else addEvent(o);
+     }}]);
+}
+function sheetSac(ev){
+  openSheet(`<h3>Modifier le remplissage</h3>
+    <label>Nombre de sacs</label><input id="fN" type="number" inputmode="numeric" min="1" value="${ev.n}">
+    <label>Date</label><input id="fD" type="datetime-local" value="${toInput(ev.ts)}">`,
+    [{label:'Annuler'},{label:'Supprimer',cls:'red',fn:()=>delAsk(ev)},
+     {label:'Enregistrer',cls:'fire',fn:()=>{
+        const nn = parseInt($('fN').value); if(!(nn>0)){ alert('Nombre invalide'); return false; }
+        updEvent(ev.id,{n:nn, ts:fromInput($('fD').value)});
+     }}]);
+}
+function delAsk(ev){
+  if(!confirm('Supprimer cette saisie ?')) return false;
+  updEvent(ev.id,{del:true}); toast('Saisie supprimée','Annuler',()=>updEvent(ev.id,{del:false}));
+}
+
+/* ---------- Stats ---------- */
+let period = '30', group = 'jour', histF = 'all';
+function periodRange(){
+  const now = Date.now(); const all = alive();
+  if(period==='7') return [now-7*DAY, now];
+  if(period==='30') return [now-30*DAY, now];
+  if(period==='saison') return [seasonStart(now), now];
+  return [all.length ? all[0].ts : now-DAY, now];
+}
+function renderStats(){
+  document.querySelectorAll('#segPeriod button').forEach(b=>b.classList.toggle('on', b.dataset.p===period));
+  document.querySelectorAll('#segGroup button').forEach(b=>b.classList.toggle('on', b.dataset.g===group));
+  const [a,b] = periodRange();
+  const sc = sacs().filter(e=>e.ts>=a && e.ts<=b);
+  const n = sc.reduce((s,e)=>s+e.n,0);
+  const firstSac = sacs()[0];
+  const effA = firstSac ? Math.max(a, Math.min(firstSac.ts, b)) : a;
+  const days = Math.max(1, (b-effA)/DAY);
+  const ap = avgPrice();
+  // intervalle moyen
+  let gaps=[]; for(let i=1;i<sc.length;i++) gaps.push(sc[i].ts-sc[i-1].ts);
+  const gap = gaps.length ? gaps.reduce((s,x)=>s+x,0)/gaps.length : null;
+  const ach = alive().filter(e=>e.t==='achat' && e.ts>=a && e.ts<=b);
+  const spent = ach.reduce((s,e)=>s+e.n*(e.p||0),0);
+  $('kpis').innerHTML = [
+    [nf(n,0), 'sacs consommés'],
+    [nf(n*poids(),0)+' kg', 'granulés brûlés'],
+    [nf(n/days), 'sacs par jour en moyenne'],
+    [gap?dur(gap):'–', 'entre deux sacs en moyenne'],
+    [ap!=null?eur(n*ap):'–', 'coût estimé consommé'],
+    [eur(spent), 'dépensé en achats']
+  ].map(([v,l])=>`<div class="kv"><b>${v}</b><span>${l}</span></div>`).join('');
+
+  // comparaison radiateurs : chaque sac est réparti sur la durée jusqu'au sac suivant
+  const all = sacs(); let sOn=0,sOff=0,mOn=0,mOff=0;
+  for(let i=0;i<all.length-1;i++){
+    const x=all[i], y=all[i+1]; if(x.ts<a || y.ts>b) continue;
+    const d = y.ts-x.ts; if(d<=0) continue;
+    const o = onMs(x.ts,y.ts);
+    sOn += x.n*o/d; sOff += x.n*(d-o)/d; mOn += o; mOff += d-o;
+  }
+  const totOn = onMs(a,b);
+  $('radNote').textContent = 'Allumés '+dur(totOn)+' sur la période ('+nf(100*totOn/Math.max(1,b-a),0)+' % du temps).';
+  const rOn = mOn>=DAY/2 ? sOn/(mOn/DAY) : null, rOff = mOff>=DAY/2 ? sOff/(mOff/DAY) : null;
+  let diff = '';
+  if(rOn!=null && rOff!=null && rOff>0) { const pc = (rOn/rOff-1)*100; diff = (pc<=0?'':'+')+nf(pc,0)+' % de granulés'; }
+  $('radCmp').innerHTML = `<div class="kv on"><b>${rOn!=null?nf(rOn):'–'}</b><span>sacs/jour radiateurs allumés${diff?'<br>'+diff:''}</span></div>
+    <div class="kv"><b>${rOff!=null?nf(rOff):'–'}</b><span>sacs/jour radiateurs éteints</span></div>`;
+
+  renderChart(); renderMonths(); renderBuys();
+}
+function buckets(){
+  const now = new Date(), out = [];
+  if(group==='jour'){
+    for(let i=29;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i); const e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+      out.push({a:+d,b:+e,l: (i%5===0)? d.getDate()+'/'+(d.getMonth()+1):''}); }
+  } else if(group==='semaine'){
+    const m = new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7));
+    for(let i=11;i>=0;i--){ const d=new Date(m.getFullYear(),m.getMonth(),m.getDate()-7*i); const e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+7);
+      out.push({a:+d,b:+e,l:(i%2===0)? d.getDate()+'/'+(d.getMonth()+1):''}); }
+  } else if(group==='mois'){
+    for(let i=11;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); const e=new Date(d.getFullYear(),d.getMonth()+1,1);
+      out.push({a:+d,b:+e,l:d.toLocaleDateString('fr-FR',{month:'short'}).replace('.','')}); }
+  } else {
+    const all = alive(); const first = all.length ? seasonStart(all[0].ts) : seasonStart(+now);
+    for(let s=new Date(first).getFullYear(); s<=new Date(seasonStart(+now)).getFullYear(); s++){
+      out.push({a:+new Date(s,8,1), b:+new Date(s+1,8,1), l:s+'-'+String(s+1).slice(2)}); }
+  }
+  return out;
+}
+function renderChart(){
+  const bs = buckets(), now = Date.now();
+  bs.forEach(x=>{ x.v = sumSacs(x.a,x.b); const end=Math.min(x.b,now); x.r = end>x.a ? onMs(x.a,end)/(end-x.a) : 0; });
+  const W=340,H=170,pl=24,pb=22,pt=10, max=Math.max(1,...bs.map(x=>x.v));
+  const step = Math.ceil(max/4), top = step*4;
+  const bw = (W-pl-4)/bs.length;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Sacs consommés">`;
+  for(let i=0;i<=4;i++){ const y = pt+(H-pt-pb)*(1-i/4);
+    s += `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${pl-4}" y="${y+3}" text-anchor="end">${step*i}</text>`; }
+  bs.forEach((x,i)=>{
+    const h = (H-pt-pb)*x.v/top, X = pl+4+i*bw+bw*0.15, w = bw*0.7, Y = H-pb-h;
+    if(x.v) s += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" rx="3" fill="var(--fire)"><title>${x.v} sac(s)</title></rect>`;
+    if(x.v && bs.length<=12) s += `<text x="${X+w/2}" y="${Y-3}" text-anchor="middle" style="fill:var(--text)">${x.v}</text>`;
+    if(x.r>0) s += `<rect x="${X}" y="${H-pb+3}" width="${w*x.r}" height="4" rx="2" fill="var(--blue)"/>`;
+    if(x.l){ const last=i===bs.length-1; s += `<text x="${last?W-1:X+w/2}" y="${H-2}" text-anchor="${last?'end':'middle'}">${x.l}</text>`; }
+  });
+  $('chart').innerHTML = s+'</svg>';
+}
+function renderMonths(){
+  const all = alive(); if(!all.length){ $('monthTable').innerHTML='<tr><td class="empty">Pas encore de données</td></tr>'; return; }
+  const ap = avgPrice(), rows=[]; const now=new Date();
+  let d = new Date(now.getFullYear(), now.getMonth(), 1); const first = new Date(all[0].ts); const stop = new Date(first.getFullYear(), first.getMonth(), 1);
+  while(d>=stop && rows.length<24){
+    const e = new Date(d.getFullYear(), d.getMonth()+1, 1), end = Math.min(+e, Date.now());
+    const n = sumSacs(+d,+e), r = end>+d ? onMs(+d,end)/(end-d) : 0;
+    rows.push(`<tr><td>${d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</td><td>${n}</td><td>${nf(n*poids(),0)}</td><td>${ap!=null?eur(n*ap):'–'}</td><td>${nf(r*100,0)} %</td></tr>`);
+    d = new Date(d.getFullYear(), d.getMonth()-1, 1);
+  }
+  $('monthTable').innerHTML = '<tr><th>Mois</th><th>Sacs</th><th>kg</th><th>Coût</th><th>Radiat.</th></tr>'+rows.join('');
+}
+function renderBuys(){
+  const ach = alive().filter(e=>e.t==='achat').reverse();
+  if(!ach.length){ $('buyTable').innerHTML='<tr><td class="empty">Aucun achat saisi</td></tr>'; return; }
+  const ap = avgPrice();
+  $('buyTable').innerHTML = '<tr><th>Date</th><th>Sacs</th><th>€/sac</th><th>Total</th></tr>' +
+    ach.map(e=>`<tr><td>${new Date(e.ts).toLocaleDateString('fr-FR')}</td><td>${e.n}</td><td>${eur(e.p)}</td><td>${eur(e.n*e.p)}</td></tr>`).join('') +
+    `<tr><td><b>Prix moyen</b></td><td></td><td><b>${eur(ap)}</b></td><td></td></tr>`;
+}
+
+/* ---------- Historique ---------- */
+function renderHist(){
+  document.querySelectorAll('#segHist button').forEach(b=>b.classList.toggle('on', b.dataset.h===histF));
+  const ev = alive().filter(e=> histF==='all' || (histF==='rad' ? (e.t==='on'||e.t==='off') : e.t===histF || (histF==='achat' && e.t==='inv'))).reverse();
+  if(!ev.length){ $('histList').innerHTML = '<div class="empty">Rien pour l\'instant</div>'; return; }
+  let html = '', lastDay = '';
+  for(const e of ev.slice(0,400)){
+    const dl = dayLabel(e.ts); if(dl!==lastDay){ html += `<div class="day">${dl}</div>`; lastDay = dl; }
+    let ic, tx;
+    if(e.t==='sac'){ ic='🔥'; tx = e.n>1 ? e.n+' sacs dans le poêle' : '1 sac dans le poêle'; }
+    else if(e.t==='achat'){ ic='🚚'; tx = 'Achat de '+e.n+' sacs · '+eur(e.p)+'/sac'; }
+    else if(e.t==='inv'){ ic='📦'; tx = 'Stock compté : '+e.n+' sacs'; }
+    else if(e.t==='on'){ ic='⚡'; tx = 'Radiateurs allumés'; }
+    else { ic='⭘'; tx = 'Radiateurs coupés'; }
+    html += `<div class="item" onclick="editEv('${e.id}')"><div class="ic">${ic}</div><div class="tx">${tx}${e.by?'<small>'+esc(e.by)+'</small>':''}</div><div class="tm">${hm(e.ts)}</div></div>`;
+  }
+  $('histList').innerHTML = html;
+}
+function editEv(id){
+  const e = data.events.find(x=>x.id===id); if(!e) return;
+  if(e.t==='sac') sheetSac(e); else if(e.t==='achat') sheetAchat(e); else if(e.t==='inv') sheetInventaire(e); else sheetRad(e);
+}
+
+/* ---------- Réglages ---------- */
+function renderSet(){
+  $('sQui').value = cfg.qui||''; $('sSeuil').value = S().seuil; $('sPoids').value = poids();
+  $('sOwner').value = cfg.owner||''; $('sRepo').value = cfg.repo||''; $('sToken').value = cfg.token||'';
+  $('ver').textContent = VERSION;
+  $('syncInfo').textContent = cfg.lastSync ? 'Dernière synchro : '+dayLabel(cfg.lastSync)+' à '+hm(cfg.lastSync) : '';
+}
+function saveSync(){
+  cfg.owner = $('sOwner').value.trim(); cfg.repo = $('sRepo').value.trim(); cfg.token = $('sToken').value.trim();
+  cfg.dirty = true; saveCfg(); sync(true);
+}
+function exportJson(){
+  const blob = new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'granules-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+}
+function importJson(inp){
+  const f = inp.files[0]; if(!f) return;
+  f.text().then(t=>{
+    try{ const d = JSON.parse(t); if(!Array.isArray(d.events)) throw 0;
+      data = merge(data, d); saveData(); render(); toast('Sauvegarde importée'); }
+    catch(e){ alert('Fichier invalide'); }
+    inp.value='';
+  });
+}
+async function forceUpdate(){
+  try{
+    if('serviceWorker' in navigator){ const r = await navigator.serviceWorker.getRegistrations(); for(const x of r) await x.unregister(); }
+    if(window.caches){ const k = await caches.keys(); for(const x of k) await caches.delete(x); }
+  }catch(e){}
+  location.reload();
+}
+
+/* ---------- Synchro GitHub ---------- */
+function merge(a, b){
+  const m = new Map();
+  for(const e of (a.events||[])) m.set(e.id, e);
+  for(const e of (b.events||[])){ const x = m.get(e.id); if(!x || (e.u||0) > (x.u||0)) m.set(e.id, e); }
+  const sa = a.settings||{u:0}, sb = b.settings||{u:0};
+  return {events:[...m.values()].sort((x,y)=>x.ts-y.ts), settings: (sb.u||0) > (sa.u||0) ? sb : sa};
+}
+function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64dec(s){ return decodeURIComponent(escape(atob(s.replace(/\s/g,'')))); }
+function apiUrl(){ return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/granules.json`; }
+function ghFetch(method, body){
+  return fetch(apiUrl() + (method==='GET' ? '?t='+Date.now() : ''), {
+    method, cache:'no-store',
+    headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'},
+    body: body ? JSON.stringify(body) : undefined
+  });
+}
+let syncing = false, syncAgain = false, syncT;
+function scheduleSync(){ clearTimeout(syncT); syncT = setTimeout(()=>sync(), 1200); }
+function setBadge(state, msg){
+  const txt = {off:'○ Local', ok:'✓ Synchro', busy:'⟳ Synchro…', wait:'● En attente', err:'⚠ Erreur'}[state];
+  $('syncBadge').textContent = txt; $('syncBadge').title = msg||'';
+}
+async function sync(manual){
+  if(!cfg.token || !cfg.owner || !cfg.repo){ setBadge('off'); if(manual) toast('Synchro non configurée (Réglages)'); return; }
+  if(!navigator.onLine){ setBadge(cfg.dirty?'wait':'ok'); if(manual) toast('Pas de réseau, ce sera envoyé plus tard'); return; }
+  if(syncing){ syncAgain = true; return; }
+  syncing = true; setBadge('busy');
+  try{
+    let done = false;
+    for(let i=0; i<4 && !done; i++){
+      const r = await ghFetch('GET');
+      let remote = {events:[], settings:{u:0}}, sha;
+      if(r.status===200){ const j = await r.json(); sha = j.sha; remote = JSON.parse(b64dec(j.content)); }
+      else if(r.status===401) throw new Error('Clé d\'accès refusée');
+      else if(r.status!==404) throw new Error('GitHub a répondu '+r.status);
+      const merged = merge(data, remote);
+      data = merged; localStorage.setItem('gr_data', JSON.stringify(data));
+      const rm = new Map((remote.events||[]).map(e=>[e.id, e.u]));
+      const need = merged.events.length !== (remote.events||[]).length || merged.events.some(e=>rm.get(e.id)!==e.u) || (merged.settings.u||0) !== ((remote.settings||{}).u||0);
+      if(!need){ done = true; break; }
+      const body = {message:'Saisie '+(cfg.qui||'')+' '+new Date().toLocaleString('fr-FR'), content:b64enc(JSON.stringify(merged))};
+      if(sha) body.sha = sha;
+      const p = await ghFetch('PUT', body);
+      if(p.status===200 || p.status===201) done = true;
+      else if(p.status===404) throw new Error('Dépôt introuvable : vérifie le compte, le nom du dépôt et les droits de la clé');
+      else if(p.status===403) throw new Error('La clé n\'a pas le droit d\'écrire dans ce dépôt');
+      else if(p.status!==409 && p.status!==422) throw new Error('GitHub a répondu '+p.status);
+    }
+    if(!done) throw new Error('Conflit, réessaie');
+    cfg.dirty = false; cfg.lastSync = Date.now(); saveCfg();
+    setBadge('ok'); render();
+    if(manual) toast('Synchronisé ✓');
+  }catch(e){
+    setBadge('err', e.message);
+    if(manual) alert('Synchro impossible : '+e.message);
+  }finally{
+    syncing = false;
+    if(syncAgain){ syncAgain = false; scheduleSync(); }
+  }
+}
+
+/* ---------- Navigation ---------- */
+let view = 'home';
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+  view = b.dataset.v;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x===b));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='v-'+view));
+  render(); window.scrollTo(0,0);
+});
+document.querySelectorAll('#segPeriod button').forEach(b=>b.onclick=()=>{ period=b.dataset.p; renderStats(); });
+document.querySelectorAll('#segGroup button').forEach(b=>b.onclick=()=>{ group=b.dataset.g; renderStats(); });
+document.querySelectorAll('#segHist button').forEach(b=>b.onclick=()=>{ histF=b.dataset.h; renderHist(); });
+
+function render(){
+  renderHome();
+  if(view==='stats') renderStats();
+  if(view==='hist') renderHist();
+  if(view==='set') renderSet();
+}
+
+/* ---------- Démarrage ---------- */
+render();
+setBadge(cfg.token ? (cfg.dirty?'wait':'ok') : 'off');
+sync();
+window.addEventListener('online', ()=>sync());
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ render(); sync(); } });
+setInterval(()=>{ if(document.visibilityState==='visible') sync(); }, 120000);
+setInterval(()=>{ if(document.visibilityState==='visible') renderHome(); }, 60000);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(!cfg.qui) setTimeout(()=>{ const q = prompt('Ton prénom (pour savoir qui a saisi quoi) :'); if(q){ cfg.qui=q.trim(); saveCfg(); } }, 600);
+</script>
+</body>
+</html>
