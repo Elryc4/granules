@@ -159,7 +159,7 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
       <div class="stock"><span class="big" id="stockN">0</span><span class="unit">sacs</span></div>
       <div class="sub" id="stockSub"></div>
     </div>
-    <button class="btnSac" id="btnSac" onclick="addSac()"><i data-ic="plus"></i>1 sac dans le poêle<small>un appui = un sac de 15 kg</small></button>
+    <button class="btnSac" id="btnSac" onclick="addSac(event)"><i data-ic="plus"></i>1 sac dans le poêle<small>un appui = un sac de 15 kg</small></button>
     <div class="last" id="lastSac"></div>
     <div class="row">
       <div class="mini"><b id="todayN">0</b><span>aujourd'hui</span></div>
@@ -256,6 +256,7 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
     </div>
     <div class="card">
       <div class="ttl"><span class="pas grey" data-ic="info"></span>Appli</div>
+      <label style="display:flex;align-items:center;justify-content:space-between;font-size:16px;color:var(--text);margin:10px 2px 4px">Animation du bouton sac<input type="checkbox" id="sAnim" style="width:24px;height:24px;-webkit-appearance:checkbox;appearance:auto;accent-color:#e8590c" onchange="cfg.anim=this.checked;saveCfg()"></label>
       <div class="note">Version <span id="ver"></span></div>
       <button class="btn ghost wide" onclick="forceUpdate()">Rechercher une mise à jour</button>
     </div>
@@ -274,7 +275,7 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
 <div id="toast"><span id="toastTx"></span><button id="toastBtn"></button></div>
 
 <script>
-const VERSION = '1.3';
+const VERSION = '1.4';
 const ICONS = {
   flame:'<path d="M12 3c.8 3.2 5 5.6 5 10.2a5 5 0 0 1-10 0c0-2.1 1-3.6 2.1-4.6.2 1.6 1 2.6 2.1 3C10.9 9 11 6 12 3z"/><path d="M12 21a2.2 2.2 0 0 1-2.2-2.2c0-1.4 1.2-2.2 2.2-3.6 1 1.4 2.2 2.2 2.2 3.6A2.2 2.2 0 0 1 12 21z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -416,7 +417,7 @@ function renderHome(){
   if(rate && rate>0) sub += ' · environ '+nf(st/rate,0)+' jours restants';
   $('stockSub').innerHTML = esc(sub) + ((st <= S().seuil && hasStock) ? '<br><span class="warnTx">'+ic('alert')+' Pense à recommander</span>' : '');
   $('stockCard').classList.toggle('alert', hasStock && st <= S().seuil);
-  $('btnSac').querySelector('small').textContent = 'un appui = un sac de '+nf(poids())+' kg';
+  if(!animBusy) $('btnSac').querySelector('small').textContent = 'un appui = un sac de '+nf(poids())+' kg';
 
   const sc = sacs(), last = sc[sc.length-1];
   $('lastSac').textContent = last ? 'Dernier sac : '+dayLabel(last.ts)+' à '+hm(last.ts)+' ('+ago(last.ts)+')'+(last.by?' · '+last.by:'') : 'Aucun sac saisi pour l\'instant';
@@ -440,9 +441,67 @@ function renderHome(){
 
 /* ---------- Actions ---------- */
 let undoTimer;
-function addSac(){
+/* ---------- Animation du bouton sac : granulés, braises et flamme du logo ---------- */
+const NSV='http://www.w3.org/2000/svg', LOGO_BG='#3a2a20';
+function logoPath(w,h){ let d='';
+  for(let i=0;i<=120;i++){ const a=i/120*2*Math.PI, x=Math.sin(a), y=-Math.cos(a), r=1-.6*Math.pow(Math.max(0,-y),1.5);
+    const px=x*r*w, py=-h*.38+(y*(y<0?h*.62:h*.38))-Math.pow(Math.max(0,-y),3)*h*.25; d+=(i?'L':'M')+px.toFixed(3)+','+py.toFixed(3); }
+  return d+'Z'; }
+const LOGO_FLAME=[['#e8590c',150,330],['#ff8a3d',100,230],['#ffd478',52,125]].map(([c,w,h])=>[c,logoPath(w/330,h/330)]);
+const SPARK_C=['#ffd478','#ff8a3d','#e8590c','#fff3d1'];
+let animBusy=false;
+function sacAnim(btn, tx, ty){
+  animBusy=true;
+  const rect=btn.getBoundingClientRect(), BW=rect.width, BH=rect.height, ABOVE=180, SIDE=40, rnd=(a,b)=>a+Math.random()*(b-a);
+  const svg=document.createElementNS(NSV,'svg');
+  Object.assign(svg.style,{position:'fixed',left:(rect.left-SIDE)+'px',top:(rect.top-ABOVE)+'px',pointerEvents:'none',overflow:'visible',zIndex:8});
+  svg.setAttribute('width',BW+SIDE*2); svg.setAttribute('height',BH+ABOVE+10); document.body.appendChild(svg);
+  const mk=(tag,a)=>{const e=document.createElementNS(NSV,tag);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e;};
+  const X=tx+SIDE, Y=ty+ABOVE, pel=[], sp=[], rings=[]; let flame=null, flamed=false, swapped=false;
+  const ease=t=>{const c=1.9;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);};
+  for(let i=0;i<7;i++) setTimeout(()=>pel.push({e:mk('rect',{width:13,height:6,rx:3,fill:'#b5814f',stroke:'#7a5230','stroke-width':1.3}),x:X+rnd(-24,24),y:ABOVE-rnd(60,110),vx:rnd(-.4,.4),vy:rnd(1,2.5),r:rnd(0,180),vr:rnd(-14,14)}), i*30);
+  const burst=(x,y,n,spd,big)=>{ for(let i=0;i<n;i++){ const a=big?rnd(0,2*Math.PI):rnd(Math.PI*1.05,Math.PI*1.95), v=rnd(spd*.5,spd);
+    const e=Math.random()<.6?mk('path',{d:'M0,-5 L3.2,0 L0,5 L-3.2,0Z',fill:SPARK_C[i%4]}):mk('circle',{r:rnd(2,3.4),fill:SPARK_C[i%4]});
+    sp.push({e,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(big?2:0),r:rnd(0,90),vr:rnd(-14,14),life:rnd(22,38)*(big?1.3:1),age:0}); } };
+  const old = btn.innerHTML;
+  btn.animate([{transform:'scale(1)'},{transform:'scale(.97)'},{transform:'scale(1)'}],{duration:220});
+  const t0=performance.now();
+  function frame(now){
+    const t=now-t0;
+    for(let i=pel.length-1;i>=0;i--){ const p=pel[i]; p.vy+=.55; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr;
+      if(p.y>=Y-4){ p.e.remove(); pel.splice(i,1); burst(p.x,Y-2,4,4.5,false); btn.animate([{transform:'translateY(0)'},{transform:'translateY(2px)'},{transform:'translateY(0)'}],{duration:110}); continue; }
+      p.e.setAttribute('transform',`translate(${p.x},${p.y}) rotate(${p.r}) translate(-6.5,-3)`); }
+    if(!flamed && t>440){ flamed=true; btn.style.background=LOGO_BG; btn.style.boxShadow='none';
+      flame={t, paths:LOGO_FLAME.map(([c,d])=>mk('path',{d,fill:c}))};
+      burst(X,Y,22,8.5,true);
+      rings.push({e:mk('circle',{cx:X,cy:Y,r:0,fill:'none',stroke:'#ffd478','stroke-width':4}),age:0});
+      const m=mk('text',{x:SIDE+BW-26,y:ABOVE-12,'text-anchor':'end',fill:'#e8590c','font-size':'13','font-weight':'700'}); m.textContent='−1 sac';
+      m.animate([{transform:'translateY(0)',opacity:0},{transform:'translateY(-10px)',opacity:1,offset:.25},{transform:'translateY(-30px)',opacity:0}],{duration:1000,fill:'forwards'}); }
+    if(flame){ const a=t-flame.t, H=BH*1.6, e=a<200?ease(a/200):a<520?1:Math.max(0,1-Math.pow((a-520)/200,2));
+      if(a>720){ flame.paths.forEach(p=>p.remove()); flame=null; btn.style.background=''; btn.style.boxShadow=''; }
+      else { const tq=Math.floor(a/80)*80/1000; flame.paths.forEach((p,i)=>{ const sx=1+.05*Math.sin(tq*17+i*1.3), sy=1+.07*Math.sin(tq*13+i*1.9), sk=5*Math.sin(tq*11+i*.7);
+        p.setAttribute('transform',`translate(${X},${Y+BH*.32}) skewX(${sk}) scale(${H*e*sx},${H*e*sy})`); }); } }
+    if(!swapped && t>760){ swapped=true;
+      btn.innerHTML = `${ic('flame')} Sac ajouté<small>stock : ${stockNow()} sac${Math.abs(stockNow())>1?'s':''}</small>`;
+      setTimeout(()=>{ btn.innerHTML = old; animBusy=false; renderHome(); }, 1100); }
+    for(let i=sp.length-1;i>=0;i--){ const s=sp[i]; s.age++; s.x+=s.vx; s.y+=s.vy; s.vy+=.22; s.r+=s.vr; const k=1-s.age/s.life;
+      if(k<=0){ s.e.remove(); sp.splice(i,1); continue; } s.e.setAttribute('transform',`translate(${s.x},${s.y}) rotate(${s.r}) scale(${k})`); }
+    for(let i=rings.length-1;i>=0;i--){ const g=rings[i]; g.age++; const k=g.age/22; if(k>=1){ g.e.remove(); rings.splice(i,1); continue; }
+      g.e.setAttribute('r',80*(1-Math.pow(1-k,2))); g.e.setAttribute('stroke-width',4*(1-k)); }
+    if(t<1250 || sp.length || pel.length || flame) requestAnimationFrame(frame); else svg.remove();
+  }
+  requestAnimationFrame(frame);
+}
+function addSac(e){
+  if(animBusy) return; // évite un double appui pendant l'animation
   const ev = addEvent({t:'sac', ts:Date.now(), n:1});
   toast('1 sac ajouté · stock '+stockNow(), 'Annuler', ()=>updEvent(ev.id,{del:true}));
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(cfg.anim!==false && !reduce){
+    const btn = $('btnSac'), r = btn.getBoundingClientRect();
+    const x = e && e.clientX ? e.clientX - r.left : r.width/2, y = e && e.clientY ? e.clientY - r.top : r.height/2;
+    sacAnim(btn, x, y);
+  }
 }
 function toast(msg, btn, fn){
   $('toastTx').textContent = msg;
@@ -905,7 +964,7 @@ function editEv(id){
 function renderSet(){
   $('sQui').value = cfg.qui||''; $('sSeuil').value = S().seuil; $('sPoids').value = poids();
   $('sOwner').value = cfg.owner||''; $('sRepo').value = cfg.repo||''; $('sToken').value = cfg.token||'';
-  $('ver').textContent = VERSION;
+  $('ver').textContent = VERSION; $('sAnim').checked = cfg.anim!==false;
   $('syncInfo').textContent = cfg.lastSync ? 'Dernière synchro : '+dayLabel(cfg.lastSync)+' à '+hm(cfg.lastSync) : '';
 }
 function saveSync(){
