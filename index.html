@@ -278,6 +278,8 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
     <h2><span class="pas grey" data-ic="wrench"></span>Historique du poêle</h2>
     <button class="btn ghost wide" style="margin-top:0" onclick="sheetPoele()"><span class="pas grey" data-ic="plus"></span>Ajouter (entretien, réparation…)</button>
     <div id="poeleList"></div>
+    <h2 id="factH" style="display:none"><span class="pas brown" data-ic="clip"></span>Factures</h2>
+    <div id="factList"></div>
   </section>
 
   <!-- REGLAGES -->
@@ -285,7 +287,7 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
     <div class="card">
       <div class="ttl"><span class="pas fire" data-ic="user"></span>Moi</div>
       <label>Prénom (affiché dans l'historique)</label>
-      <input id="sQui" placeholder="ex. Eric" onchange="cfg.qui=this.value.trim();saveCfg()">
+      <input id="sQui" placeholder="ex. Camille" onchange="cfg.qui=this.value.trim();saveCfg()">
     </div>
     <div class="card">
       <div class="ttl"><span class="pas box" data-ic="box"></span>Stock</div>
@@ -297,9 +299,9 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
     </div>
     <div class="card">
       <div class="ttl"><span class="pas blue" data-ic="cloud"></span>Synchronisation GitHub</div>
-      <div class="note">Les données sont rangées dans un dépôt privé, partagé par les deux iPhone.</div>
+      <div class="note">Les données sont rangées dans un dépôt GitHub privé. Tous les téléphones qui utilisent le même dépôt et la même clé partagent les mêmes données.</div>
       <label>Compte GitHub</label>
-      <input id="sOwner" placeholder="Elryc4" autocapitalize="off" autocorrect="off">
+      <input id="sOwner" placeholder="nom du compte" autocapitalize="off" autocorrect="off">
       <label>Dépôt des données (privé)</label>
       <input id="sRepo" placeholder="granules-data" autocapitalize="off" autocorrect="off">
       <label>Clé d'accès (jeton)</label>
@@ -332,7 +334,7 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
 </nav>
 
 <div class="sheetBg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
-<div id="viewer"><div class="vbar"><span id="vName" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button onclick="closeViewer()">Fermer</button></div><div class="vbody" id="vBody"></div></div>
+<div id="viewer"><div class="vbar"><span id="vName" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><span style="display:flex;gap:8px;flex:none"><button onclick="shareDoc()" aria-label="Enregistrer ou partager"><span data-ic="download"></span> Enregistrer</button><button onclick="closeViewer()">Fermer</button></span></div><div class="vbody" id="vBody"></div></div>
 <div id="toast"><span id="toastTx"></span><button id="toastBtn"></button></div>
 
 <script>
@@ -502,7 +504,7 @@ if(typeof module!=='undefined') module.exports = globalThis.Estimateur;
 
 </script>
 <script>
-const VERSION = '1.9.1';
+const VERSION = '1.9.4';
 const ICONS = {
   flame:'<path d="M12 3c.8 3.2 5 5.6 5 10.2a5 5 0 0 1-10 0c0-2.1 1-3.6 2.1-4.6.2 1.6 1 2.6 2.1 3C10.9 9 11 6 12 3z"/><path d="M12 21a2.2 2.2 0 0 1-2.2-2.2c0-1.4 1.2-2.2 2.2-3.6 1 1.4 2.2 2.2 2.2 3.6A2.2 2.2 0 0 1 12 21z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -1304,6 +1306,14 @@ function renderPoele(){
   }
   // historique poêle
   const ev = poeleEvents().reverse();
+  // toutes les factures du poêle, de la plus récente à la plus ancienne
+  const fl = [];
+  ev.forEach(e=>(e.docs||[]).forEach(d=>fl.push({e, d})));
+  $('factH').style.display = fl.length ? '' : 'none';
+  window._fact = fl.map(x=>x.d);
+  $('factList').innerHTML = fl.map((x,i)=>`<div class="docI" style="margin:6px 0;background:var(--card)" onclick="openDoc(_fact[${i}])"><span class="chip ${x.d.type==='application/pdf'?'grey':'brown'}">${ic(x.d.type==='application/pdf'?'doc':'clip')}</span>
+    <div class="tx">${POELE_K[x.e.k]||'Intervention'} · ${new Date(x.e.ts).toLocaleDateString('fr-FR')}<small>${esc(x.d.name)}</small></div>
+    <span class="chip ${x.d.where==='cloud'?'blue':'grey'}" style="width:26px;height:26px;font-size:14px;border-radius:8px">${ic(x.d.where==='cloud'?'cloud':'phone')}</span></div>`).join('');
   $('poeleList').innerHTML = ev.length ? ev.map(e=>`<div class="item" style="margin:6px 0" onclick="editEv('${e.id}')"><span class="chip grey">${ic(e.k==='install'?'stove':'wrench')}</span><div class="tx">${POELE_K[e.k]||'Intervention'}${(e.docs&&e.docs.length)?'<span class="clipTag">'+ic('clip')+e.docs.length+'</span>':''}${(e.note||e.p)?'<small>'+esc([e.note, e.p?eur(e.p):''].filter(Boolean).join(' · '))+'</small>':''}</div><div class="tm">${new Date(e.ts).toLocaleDateString('fr-FR')}</div></div>`).join('') : '<div class="empty">Aucune intervention</div>';
 }
 /* ---------- Factures : photo ou PDF, dans le cloud (GitHub) ou seulement sur ce téléphone ---------- */
@@ -1348,16 +1358,27 @@ async function openDoc(d){
     if(!cfg.token){ alert('Synchro non configurée : impossible de récupérer la facture'); return; }
     toast('Téléchargement de la facture…');
     const r = await fetch(apiUrl(d.path)+'?t='+Date.now(), {cache:'no-store', headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github.raw'}});
-    if(r.status===404){ alert('Cette facture n\'est pas encore arrivée en ligne (elle est peut-être en attente sur l\'autre téléphone).'); return; }
+    if(r.status===404){ alert('Cette facture n\'est pas encore arrivée en ligne (elle est peut-être encore en attente sur un autre téléphone).'); return; }
     if(!r.ok){ alert('Impossible de récupérer la facture'); return; }
     blob = new Blob([await r.arrayBuffer()], {type:d.type}); await idbPut(d.id, {blob, type:d.type, name:d.name, where:'cloud', path:d.path, uploaded:true});
   }
   if(!blob){ alert('Cette facture est enregistrée sur un autre téléphone uniquement.'); return; }
+  vCur = {blob, name:d.name, type:d.type};
   const url = URL.createObjectURL(blob), v = $('viewer');
   $('vName').textContent = d.name;
   if(d.type==='application/pdf'){ $('vBody').innerHTML = `<a href="${url}" target="_blank" rel="noopener" style="color:#fff;font-size:17px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none"><span style="font-size:64px">${ic('doc')}</span>Ouvrir le PDF</a>`; }
   else { $('vBody').innerHTML = `<img src="${url}" alt="Facture">`; $('vBody').firstChild.onclick = ()=>v.classList.toggle('zoom'); }
   v.classList.remove('zoom'); v.classList.add('open');
+}
+let vCur = null;
+// Récupérer une facture : feuille de partage de l'iPhone (Enregistrer dans Fichiers, Photos, Mail…), sinon téléchargement
+async function shareDoc(){
+  if(!vCur) return;
+  const ext = vCur.type==='application/pdf' ? 'pdf' : 'jpg';
+  const fname = (vCur.name.replace(/\.pdf$/i,'').replace(/[\/:*?"<>|]+/g,'-') || 'facture') + '.' + ext;
+  const file = new File([vCur.blob], fname, {type: vCur.type});
+  try{ if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title: vCur.name}); return; } }catch(e){ if(e && e.name==='AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = fname; document.body.appendChild(a); a.click(); a.remove();
 }
 function closeViewer(){ $('viewer').classList.remove('open'); $('vBody').innerHTML = ''; }
 let docsDraft = [], docsRemoved = [];
