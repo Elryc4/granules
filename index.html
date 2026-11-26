@@ -34,12 +34,26 @@ main{padding:6px 14px 20px;max-width:560px;margin:0 auto}
 .stock .big{font-size:56px;font-weight:800;line-height:1;letter-spacing:-1px}
 .stock .unit{font-size:20px;font-weight:600;color:var(--muted)}
 .sub{color:var(--muted);font-size:14px;margin-top:6px}
-.card.alert{background:var(--warnSoft);border-color:var(--warn)}
-.card.alert .big{color:var(--warn)}
+.stHd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.stock .big{font-size:48px}
+.tien{text-align:right;margin-top:34px;min-width:0}
+.tien b{display:block;font-size:20px;font-weight:700;line-height:1.15}
+.tien small{font-size:12px;color:var(--muted)}
+.gbox{margin-top:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.glbl{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+.glbl svg.i{font-size:14px;vertical-align:-2px;margin-left:3px}
+svg.gz{display:block;width:100%;overflow:visible}
+.gmsg{font-size:14px;font-weight:600;margin-top:6px}
+.stActs{display:flex;gap:10px;margin-top:12px}
+.stActs .btn{padding:11px 14px}
+.btn.brownB{flex:1;background:#a0703f;color:#fff}
+.chips{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:999px;padding:8px 14px;font-size:15px;cursor:pointer}
 .btnSac{display:block;width:100%;border:0;border-radius:22px;padding:30px 10px;margin:14px 0 6px;
   background:linear-gradient(160deg,var(--fire2),var(--fire));color:#fff;font-size:26px;font-weight:800;
   box-shadow:0 8px 22px rgba(232,89,12,.35);cursor:pointer}
 .btnSac:active{transform:scale(.98)}
+.btnSac{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .btnSac small{display:block;font-size:14px;font-weight:500;opacity:.9;margin-top:4px}
 .last{text-align:center;color:var(--muted);font-size:14px;margin-bottom:6px}
 .row{display:flex;gap:10px}
@@ -160,10 +174,15 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
       <button class="btn fire wide" onclick="sheetInventaire()">Indiquer mon stock</button>
     </div>
     <div class="card banner" id="entBanner" style="display:none" onclick="goView('poele')"></div>
-    <div class="card" id="stockCard" onclick="sheetInventaire()">
-      <div class="ttl" style="margin:0 0 8px"><span class="pas box" data-ic="box"></span>Stock</div>
-      <div class="stock"><span class="big" id="stockN">0</span><span class="unit">sacs</span></div>
-      <div class="sub" id="stockSub"></div>
+    <div class="card" id="stockCard">
+      <div class="stHd">
+        <div><div class="ttl" style="margin:0 0 8px"><span class="pas box" data-ic="box"></span>Stock</div>
+          <div class="stock"><span class="big" id="stockN">0</span><span class="unit">sacs</span></div></div>
+        <div class="tien"><b id="tienV"></b><small id="tienL"></small></div>
+      </div>
+      <div class="gbox" id="gbox" onclick="toggleGauge()"><div class="glbl"><span id="gT"></span><span id="gV"></span></div><svg class="gz" id="gSvg" height="34"></svg></div>
+      <div class="gmsg" id="gMsg"></div>
+      <div class="stActs"><button class="btn brownB" onclick="sheetAchat()"><span data-ic="plus"></span> Livraison</button><button class="btn ghost" onclick="sheetInventaire()">Recompter</button></div>
     </div>
     <button class="btnSac" id="btnSac" onclick="addSac(event)"><i data-ic="plus"></i>1 sac dans le poêle<small>un appui = un sac de 15 kg</small></button>
     <div class="last" id="lastSac"></div>
@@ -177,7 +196,6 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
       <div style="flex:1;min-width:0"><div class="ttl" style="margin:0 0 2px;font-size:15px;white-space:nowrap">Radiateurs électriques</div><div class="st" id="radSt">Éteints</div></div>
       <button class="btn radB" id="radBtn" onclick="sheetRad()">Allumer</button>
     </div>
-    <button class="btn ghost wide" onclick="sheetAchat()"><span class="pas brown" data-ic="truck"></span>Livraison / achat de sacs</button>
   </section>
 
   <!-- STATS -->
@@ -218,6 +236,9 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
       <div class="ttl"><span class="pas box" data-ic="stove"></span>Mon poêle</div>
       <label>Marque</label><input id="pMarque" placeholder="ex. MCZ" onchange="setSetting('marque',this.value.trim())">
       <label>Modèle</label><input id="pModele" placeholder="ex. Ego 8 kW" onchange="setSetting('modele',this.value.trim())">
+      <label>Première saison : consommation estimée par hiver (sacs, facultatif)</label><input id="pEstH" type="number" inputmode="numeric" min="0" placeholder="ex. 60" onchange="setSetting('estHiver',+this.value||0)">
+      <label>La chauffe dure en général jusqu'à</label><select id="pFin" onchange="setSetting('finMois',+this.value)"><option value="2">fin mars</option><option value="3">fin avril</option><option value="4">fin mai</option><option value="5">fin juin</option></select>
+      <div class="note">Ces deux réglages ne servent que tant qu'il n'y a pas une saison complète enregistrée.</div>
       <label>Entretien obligatoire tous les (mois)</label><input id="pInterv" type="number" inputmode="numeric" min="1" onchange="setSetting('entretienMois',+this.value)">
       <div class="note" id="pInstall"></div>
     </div>
@@ -264,7 +285,8 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
     <div class="card">
       <div class="ttl"><span class="pas grey" data-ic="info"></span>Appli</div>
       <label style="display:flex;align-items:center;justify-content:space-between;font-size:16px;color:var(--text);margin:10px 2px 4px">Animations<input type="checkbox" id="sAnim" style="width:24px;height:24px;-webkit-appearance:checkbox;appearance:auto;accent-color:#e8590c" onchange="cfg.anim=this.checked;saveCfg();renderHome()"></label>
-      <div class="note">Version <span id="ver"></span></div>
+      <label id="twRow" style="display:none;align-items:center;justify-content:space-between;font-size:16px;color:var(--text);margin:10px 2px 4px">Livraison spéciale<input type="checkbox" id="sTw" style="width:24px;height:24px;-webkit-appearance:checkbox;appearance:auto;accent-color:#e8590c" onchange="cfg.twingo=this.checked;saveCfg()"></label>
+      <div class="note" onclick="verTap()">Version <span id="ver"></span></div>
       <button class="btn ghost wide" onclick="forceUpdate()">Rechercher une mise à jour</button>
     </div>
   </section>
@@ -282,7 +304,173 @@ textarea{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;
 <div id="toast"><span id="toastTx"></span><button id="toastBtn"></button></div>
 
 <script>
-const VERSION = '1.5';
+/* Estimateur de stock / saison — module autonome (navigateur et Node)
+   Toutes les estimations partent des sacs de la maison elle-même :
+   - le profil de saison ne donne que la FORME de l'hiver (en %),
+   - le NIVEAU vient de la consommation réelle de la maison. */
+(function(root){
+const DAY = 864e5;
+const SM = 7; // saison du 1er août au 31 juillet
+// Profil type (part de la saison par mois, août → juillet), tiré d'une saison réelle dans le nord de la France
+const DEF_SHARE = [0, .016, .098, .148, .148, .230, .164, .131, .065, 0, 0, 0];
+
+function seasonStartOf(ts){ const d = new Date(ts); const y = d.getMonth() >= SM ? d.getFullYear() : d.getFullYear()-1; return new Date(y, SM, 1).getTime(); }
+const dayIdx = (ts, s0) => Math.max(0, Math.min(365, Math.floor((ts - s0)/DAY)));
+function smooth(a, w){ const o = new Array(a.length).fill(0); for(let i=0;i<a.length;i++){ let s=0,n=0; for(let j=i-w;j<=i+w;j++){ if(j>=0&&j<a.length){ s+=a[j]; n++; } } o[i]=s/n; } return o; }
+
+// Densité journalière (fraction de la saison par jour, 366 cases) à partir des parts mensuelles
+function densityFromShares(shares, year){
+  const d = new Array(366).fill(0);
+  for(let m=0;m<12;m++){ const a = dayIdx(new Date(year, SM+m, 1).getTime(), new Date(year,SM,1).getTime()), b = dayIdx(new Date(year, SM+m+1, 1).getTime(), new Date(year,SM,1).getTime());
+    for(let i=a;i<b && i<366;i++) d[i] = shares[m]/(b-a); }
+  return smooth(d, 10);
+}
+// Densité tirée d'une saison passée réelle
+function densityFromSeason(evs, s0){
+  const d = new Array(366).fill(0); let tot = 0;
+  evs.forEach(e=>{ d[dayIdx(e.ts, s0)] += e.n; tot += e.n; });
+  const sm = smooth(d, 12), s = sm.reduce((a,b)=>a+b,0) || 1;
+  return {dens: sm.map(x=>x/s), total: tot};
+}
+function cumul(dens){ const F = new Array(367).fill(0); for(let i=0;i<366;i++) F[i+1] = F[i] + dens[i]; const t = F[366]||1; return F.map(x=>x/t); }
+const Fat = (F, s0, ts) => { const x = (ts - s0)/DAY; if(x<=0) return 0; if(x>=366) return 1; const i = Math.floor(x), f = x - i; return F[i] + (F[i+1]-F[i])*f; };
+
+// Rythme récent.
+// - Maison régulière : intervalles entre sacs sur ~3 semaines, les longues pauses (vacances) sont ignorées.
+// - Maison irrégulière (présence en pointillé) : les absences font partie de la vie de la maison,
+//   on prend simplement les sacs des 28 derniers jours, absences comprises.
+function recentRate(evs, now){
+  let W = 21*DAY, e = evs.filter(x=>x.ts <= now && x.ts > now - W);
+  if(e.length < 6){ W = 45*DAY; e = evs.filter(x=>x.ts <= now && x.ts > now - W); }
+  if(e.length < 4) return null;
+  const iv = []; for(let i=1;i<e.length;i++) iv.push(e[i].ts - e[i-1].ts);
+  const med = iv.slice().sort((a,b)=>a-b)[Math.floor(iv.length/2)];
+  // irrégularité mesurée sur 6 semaines (plus stable que sur 3)
+  const e45 = evs.filter(x=>x.ts <= now && x.ts > now - 45*DAY), iv45 = [];
+  for(let i=1;i<e45.length;i++) iv45.push(e45[i].ts - e45[i-1].ts);
+  // les très longues pauses (plus d'une semaine) sont des vacances, pas de l'irrégularité
+  const ivc = (iv45.length >= 8 ? iv45 : iv).filter(x=>x <= 7*DAY);
+  const mean = ivc.reduce((a,b)=>a+b,0)/ivc.length, sd = Math.sqrt(ivc.reduce((a,b)=>a+(b-mean)**2,0)/ivc.length);
+  const cv = mean>0 ? sd/mean : 0;
+  const firstAll = evs.length ? evs[0].ts : now;
+  if(cv > .8 && now - firstAll >= 14*DAY){
+    const span = Math.min(28*DAY, now - firstAll), e28 = evs.filter(x=>x.ts <= now && x.ts > now - span);
+    const n = e28.reduce((a,x)=>a+x.n,0);
+    // on retire quand même les départs de plus d'une semaine (vacances)
+    let vac = 0; for(let i=1;i<e28.length;i++){ const g = e28[i].ts - e28[i-1].ts; if(g > 7*DAY) vac += g - 3*DAY; }
+    const o = now - (e28.length ? e28[e28.length-1].ts : now); if(o > 7*DAY) vac += o - 3*DAY;
+    return {rate: n/Math.max(7, (span - vac)/DAY), irregular: true, cv};
+  }
+  const abs = Math.max(2.5*med, 5*DAY);
+  let t = 0, n = 0;
+  for(let i=1;i<e.length;i++){ t += iv[i-1] > abs ? med : iv[i-1]; n += e[i-1].n; }
+  const open = now - e[e.length-1].ts;
+  if(open > med && open <= abs){ t += open - med; }
+  return t > 0 ? {rate: n/(t/DAY), irregular: false, cv} : null;
+}
+
+/* estimate({events:[{ts,n}], stock, now, estHiver})
+   → {mode, provisoire, total, need, out, outEarly, outLate, days, end, rate} */
+function estimate(o){
+  const now = o.now || Date.now(), stock = Math.max(0, o.stock||0);
+  const evs = (o.events||[]).filter(e=>e.n>0).sort((a,b)=>a.ts-b.ts);
+  const s0 = seasonStartOf(now), year = new Date(s0).getFullYear();
+  const cur = evs.filter(e=>e.ts>=s0 && e.ts<=now);
+  const curN = cur.reduce((a,e)=>a+e.n,0);
+  const rr = recentRate(evs, now), rate = rr ? rr.rate : null, irregular = !!(rr && rr.irregular);
+  // Saisons passées complètes (au moins 10 sacs)
+  const past = [];
+  for(let k=1;k<=3;k++){ const ps = new Date(year-k, SM, 1).getTime(), pe = new Date(year-k+1, SM, 1).getTime();
+    const pe2 = evs.filter(e=>e.ts>=ps && e.ts<pe); const tot = pe2.reduce((a,e)=>a+e.n,0);
+    const firstOk = pe2.length && pe2[0].ts < new Date(year-k, SM+3, 1).getTime(); // saison suivie depuis le début (avant novembre)
+    if(tot >= 10 && firstOk) past.push({...densityFromSeason(pe2, ps), w: 1/k}); }
+  let dens, prevTotal = null, hist = past.length > 0;
+  if(hist){ dens = new Array(366).fill(0); let ws = 0; past.forEach(p=>{ p.dens.forEach((v,i)=>dens[i]+=v*p.w); ws+=p.w; }); dens = dens.map(v=>v/ws);
+    prevTotal = past.reduce((a,p)=>a+p.total*p.w,0)/past.reduce((a,p)=>a+p.w,0);
+    // un peu de profil type pour lisser ; davantage si la maison est irrégulière (les absences de l'an dernier ne tombent pas aux mêmes dates)
+    const kH = irregular ? .5 : .85, def = densityFromShares(DEF_SHARE, year);
+    dens = dens.map((v,i)=>kH*v + (1-kH)*def[i]);
+    if(irregular) dens = smooth(dens, 15);
+  } else {
+    let sh = DEF_SHARE.slice();
+    if(o.finMois!=null){ const last = (o.finMois - SM + 12) % 12; // index dans août→juillet
+      // on décale la queue de saison : les mois après la fin sont vidés, le reste est remis à 100 %
+      sh = sh.map((v,i)=> i>last ? 0 : v);
+      if(last > 8) for(let i=9;i<=last;i++) sh[i] = Math.max(sh[i], .05); // chauffe tardive (mai, juin)
+      const t = sh.reduce((a,b)=>a+b,0); sh = sh.map(v=>v/t); }
+    dens = densityFromShares(sh, year);
+  }
+  const F = cumul(dens);
+  const Fnow = Fat(F, s0, now);
+  let endIdx = 365; while(endIdx>0 && F[endIdx] > .995) endIdx--; const end = s0 + (endIdx+1)*DAY;
+  const fNow = (Fat(F, s0, now+15*DAY) - Fat(F, s0, now-15*DAY))/30; // densité autour d'aujourd'hui (fraction/jour)
+  const firstCur = cur.length ? cur[0].ts : now;
+  let Fobs = Fnow - Fat(F, s0, firstCur);             // part de saison réellement observée cette année
+  // on retire les absences (longs trous sans sac alors qu'on aurait dû en mettre plusieurs)
+  if(!irregular && cur.length >= 6 && Fobs > .05){
+    const iv = []; for(let i=1;i<cur.length;i++) iv.push(cur[i].ts-cur[i-1].ts);
+    const med = iv.slice().sort((a,b)=>a-b)[Math.floor(iv.length/2)], guess = curN / Fobs;
+    for(let i=1;i<cur.length;i++){ const a = cur[i-1].ts + med, b = cur[i].ts;
+      if(b - cur[i-1].ts > Math.max(2.5*med, 6*DAY)){ const dF = Fat(F,s0,b) - Fat(F,s0,a); if(guess*dF >= 3) Fobs -= dF; } }
+    Fobs = Math.max(.02, Fobs);
+  }
+  const enoughData = evs.length >= 10 && (now - evs[0].ts) >= 21*DAY;
+
+  // Hors saison
+  if(Fnow >= .97 || (fNow < .0008 && Fnow > .5)) return {mode:'hors', provisoire:false, need:0, total:null, out:null, days:null, end, rate, irregular};
+
+  // Total de la saison
+  const est = [];
+  if(hist){
+    let r = null, w = 0;
+    const rS = Fobs >= .04 ? curN / (prevTotal * Fobs) : null;
+    const rR = (rate && fNow > .001) ? rate / (prevTotal * fNow) : null;
+    if(rS!=null && rR!=null){ r = .5*rS + .5*rR; } else r = rS!=null ? rS : rR;
+    if(r==null) r = 1;
+    const conf = Math.min(1, curN/12);
+    r = 1 + (Math.max(.5, Math.min(2, r)) - 1)*conf;
+    est.push({T: prevTotal * r, w: 1});
+  } else {
+    if(Fobs >= .06 && curN >= 5) est.push({T: curN / Fobs, w: Math.min(1, Fobs/.25)});
+    if(rate && fNow > .001) est.push({T: rate / fNow, w: 1});
+    if(o.estHiver > 0) est.push({T: o.estHiver, w: curN < 15 ? 2 : .3});
+  }
+  let total = null;
+  if(est.length){ const ws = est.reduce((a,e)=>a+e.w,0); total = est.reduce((a,e)=>a+e.T*e.w,0)/ws; total = Math.max(total, curN); }
+  const need = total!=null ? Math.max(0, total*(1-Fnow)) : null;
+  const provisoire = !hist || !enoughData || curN < 8;
+
+  // Autonomie du stock : on fait « brûler » le stock selon la forme de la saison
+  function outFor(T){ if(T==null || T<=0) return null; let rem = stock;
+    for(let d=0; d<400; d++){ const t = now + d*DAY, c = T*(Fat(F,s0,t+DAY) - Fat(F,s0,t)); if(t >= end) return null; rem -= c; if(rem <= 0) return t + DAY*(1 + rem/c); }
+    return null; }
+  let out = null, outEarly = null, outLate = null, days = null, mode;
+  if(!enoughData || total==null){
+    mode = 'rythme';
+    // peu de données : rythme récent, mais en suivant la forme de l'hiver (montée vers janvier, descente au printemps)
+    if(rate && fNow > .001){ const T = rate / fNow; out = outFor(T); days = out ? (out-now)/DAY : null; }
+    else if(rate){ days = stock / rate; out = now + days*DAY; }
+  } else {
+    mode = 'projection';
+    out = outFor(total);
+    const u = provisoire ? .25 : .12;
+    outEarly = outFor(total*(1+u)); outLate = outFor(total*(1-u));
+    // à court terme, le rythme récent est plus fiable que le profil
+    if(out && rate && (out-now)/DAY < 21){ const dR = stock/rate, dP = (out-now)/DAY; days = .6*dR + .4*dP; out = now + days*DAY; }
+    else if(out) days = (out-now)/DAY;
+  }
+  // fourchette en jours quand la maison est irrégulière (ou les données encore faibles)
+  let daysLow = null, daysHigh = null;
+  if(days != null && (irregular || provisoire)){ const u = irregular ? .3 : .2; daysLow = days*(1-u); daysHigh = days*(1+u); }
+  return {mode, provisoire, total, need, out, outEarly, outLate, days, daysLow, daysHigh, end, rate, hist, irregular};
+}
+root.Estimateur = {estimate, seasonStartOf, DEF_SHARE};
+})(typeof window!=='undefined' ? window : globalThis);
+if(typeof module!=='undefined') module.exports = globalThis.Estimateur;
+
+</script>
+<script>
+const VERSION = '1.7';
 const ICONS = {
   flame:'<path d="M12 3c.8 3.2 5 5.6 5 10.2a5 5 0 0 1-10 0c0-2.1 1-3.6 2.1-4.6.2 1.6 1 2.6 2.1 3C10.9 9 11 6 12 3z"/><path d="M12 21a2.2 2.2 0 0 1-2.2-2.2c0-1.4 1.2-2.2 2.2-3.6 1 1.4 2.2 2.2 2.2 3.6A2.2 2.2 0 0 1 12 21z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -301,6 +489,7 @@ const ICONS = {
   calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   stove:'<path d="M10 2.5h4v3h-4z"/><rect x="5" y="5.5" width="14" height="14" rx="2.5"/><rect x="8" y="9" width="8" height="7" rx="1.2"/><path d="M7.5 19.5v2M16.5 19.5v2"/>',
   wrench:'<path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z"/>',
+  swap:'<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',
   alert:'<path d="M12 3.5 21.5 20h-19z"/><path d="M12 10v4.5M12 17.2v.1"/>'
 };
 const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -330,7 +519,7 @@ function updEvent(id, patch){
   Object.assign(e, patch, {u:Date.now()}); saveData(); render();
 }
 function setSetting(k, v){
-  if(typeof v==='number' && !(v>0) && k!=='seuil') return;
+  if(typeof v==='number' && !(v>0) && k!=='seuil' && k!=='estHiver') return;
   data.settings[k] = v; data.settings.u = Date.now(); saveData(); render();
 }
 const S = () => data.settings;
@@ -419,12 +608,8 @@ function renderHome(){
   const st = stockNow(), rate = recentRate();
   const hasStock = alive().some(e=>e.t==='inv'||e.t==='achat');
   $('setupCard').style.display = hasStock ? 'none' : 'block';
-  $('stockN').textContent = st;
-  let sub = nf(st*poids(),0)+' kg';
-  if(rate && rate>0) sub += ' · environ '+nf(st/rate,0)+' jours restants';
-  $('stockSub').innerHTML = esc(sub) + ((st <= S().seuil && hasStock) ? '<br><span class="warnTx">'+ic('alert')+' Pense à recommander</span>' : '');
-  $('stockCard').classList.toggle('alert', hasStock && st <= S().seuil);
-  if(!animBusy) $('btnSac').querySelector('small').textContent = 'un appui = un sac de '+nf(poids())+' kg';
+  if(!stockAnim) drawStock(st);
+  if(!animBusy) $('btnSac').querySelector('small').textContent = 'un sac de '+nf(poids())+' kg · appui long : plusieurs';
 
   const sc = sacs(), last = sc[sc.length-1];
   $('lastSac').textContent = last ? 'Dernier sac : '+dayLabel(last.ts)+' à '+hm(last.ts)+' ('+ago(last.ts)+')'+(last.by?' · '+last.by:'') : 'Aucun sac saisi pour l\'instant';
@@ -449,6 +634,144 @@ function renderHome(){
 
 /* ---------- Actions ---------- */
 let undoTimer;
+/* ---------- Carte stock : autonomie, jauge, livraison ---------- */
+let stockAnim = false, lastEst = null;
+function lastPrice(){ const la = lastAchat(); return la && la.p>0 ? la.p : avgPrice(); }
+function estFor(stock){ return Estimateur.estimate({events: sacs().map(e=>({ts:e.ts, n:e.n})), stock, now: Date.now(), estHiver: S().estHiver||0, finMois: S().finMois!=null ? S().finMois : null}); }
+function stockState(st){
+  const e = estFor(Math.max(0,st)); lastEst = e;
+  const days = e.days!=null ? Math.max(0, Math.round(e.days)) : null;
+  const ok = e.mode==='projection' && (e.out==null || (e.need!=null && st >= e.need));
+  let col = '#a0703f';
+  if(ok) col = 'var(--ok)'; else if(st<=0 || (days!=null && days<10) || (S().seuil>0 && st<=S().seuil)) col = 'var(--warn)'; else if(days!=null && days<30) col = 'var(--fire)';
+  return {e, days, ok, col};
+}
+const MCOURT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const fdc = t => { const d = new Date(t); return d.getDate()+' '+MCOURT[d.getMonth()]; };
+function toggleGauge(){ if(stockAnim) return; cfg.gview = cfg.gview==='sem' ? 'besoin' : 'sem'; saveCfg();
+  const b = $('gbox'); b.animate([{opacity:1},{opacity:.15}],{duration:110}).onfinish=()=>{ drawStock(stockNow()); b.animate([{opacity:.15},{opacity:1}],{duration:160}); }; }
+function drawStock(st, live){
+  const {e, days, ok, col} = stockState(st), now = Date.now();
+  $('stockN').textContent = Math.round(st);
+  const tv = $('tienV'), tl = $('tienL'), prov = e.provisoire ? ' · provisoire' : '';
+  if(e.mode==='hors'){ tv.textContent = 'Hors saison'; tl.textContent = ''; tv.style.color = 'var(--muted)'; }
+  else if(st<=0){ tv.textContent = 'Épuisé'; tl.textContent = ''; tv.style.color = 'var(--warn)'; }
+  else if(e.mode==='rythme' && days==null){ tv.textContent = '—'; tl.textContent = 'pas encore assez de sacs'; tv.style.color = 'var(--muted)'; }
+  else if(ok){ tv.textContent = 'Toute la saison'; tl.textContent = 'jusqu\'au '+fdc(e.end)+prov; tv.style.color = col; }
+  else if(days!=null && days<21){
+    if(e.irregular && e.daysLow!=null){ const lo = Math.max(0,Math.round(e.daysLow)), hi = Math.max(lo+1,Math.round(e.daysHigh)); tv.textContent = lo+' à '+hi+' jours'; }
+    else tv.textContent = days+(days>1?' jours':' jour');
+    tl.textContent = 'restants environ'+prov; tv.style.color = col; }
+  else if(e.out){ tv.textContent = '~'+fdc(e.out); tl.textContent = 'tient jusqu\'au'+prov; tv.style.color = col; }
+  else { tv.textContent = '—'; tl.textContent = ''; }
+  // jauge
+  const box = $('gbox'), g = $('gSvg'), W = g.clientWidth || 320;
+  const canNeed = e.mode==='projection' && e.need!=null, canWeek = e.mode!=='hors' && (e.out!=null || ok);
+  if(!canNeed && !canWeek){ box.style.display='none'; $('gMsg').textContent=''; return {}; }
+  box.style.display='';
+  const view = (cfg.gview==='sem' || !canNeed) ? 'sem' : 'besoin';
+  const sw = canNeed ? ic('swap') : '';
+  g.innerHTML = ''; let fillEnd = 0, mark = null;
+  const mk = (t,a)=>{ const x=document.createElementNS('http://www.w3.org/2000/svg',t); for(const k in a) x.setAttribute(k,a[k]); g.appendChild(x); return x; };
+  if(view==='besoin'){
+    $('gT').innerHTML = 'Stock / besoin de la saison'+sw; $('gV').textContent = Math.round(st)+' / '+Math.round(e.need)+' sacs';
+    const max = Math.max(e.need, st, 1)*1.04, tx = v => W*v/max;
+    mk('rect',{x:0,y:6,width:W,height:14,rx:7,fill:'var(--line)'});
+    fillEnd = st>0 ? Math.max(14, tx(Math.min(st,max))) : 0;
+    mk('rect',{x:0,y:6,width:fillEnd,height:14,rx:7,fill:col});
+    mark = tx(e.need); mk('line',{x1:mark,x2:mark,y1:2,y2:24,stroke:'var(--text)','stroke-width':2});
+    const l = mk('text',{x:Math.min(W,Math.max(0,mark)),y:33,'font-size':10,'text-anchor':mark>W-30?'end':mark<30?'start':'middle'}); l.textContent='besoin';
+  } else {
+    const weeks = Math.max(1, Math.ceil((e.end-now)/(7*DAY))), cover = ok ? weeks : (e.out ? Math.floor((e.out-now)/(7*DAY)) : 0);
+    $('gT').innerHTML = 'Semaines couvertes'+sw; $('gV').textContent = Math.min(cover,weeks)+' / '+weeks+' semaines';
+    const gap = weeks>26 ? 2 : 3, cw = (W-gap*(weeks-1))/weeks;
+    for(let i=0;i<weeks;i++){ const x=i*(cw+gap), on=i<cover; mk('rect',{x,y:6,width:cw,height:14,rx:3,fill:on?col:'none',stroke:on?col:'var(--line)','stroke-width':1});
+      const wd = new Date(now+i*7*DAY); if(i===0 || (i>=2 && wd.getDate()<=7 && weeks<=30)){ const t=mk('text',{x,y:33,'font-size':10}); t.textContent = i===0?'auj.':MCOURT[wd.getMonth()]; } }
+    fillEnd = Math.min(cover,weeks)*(cw+gap)-gap;
+  }
+  // phrase
+  const m = $('gMsg');
+  if(canNeed){ const miss = Math.round(e.need - st), p = lastPrice();
+    m.textContent = miss>0 ? 'Il manque environ '+miss+' sac'+(miss>1?'s':'')+' pour finir la saison'+(p?' (≈ '+nf(miss*p,0)+' €)':'') : 'Stock suffisant : il restera environ '+(-miss)+' sac'+(-miss>1?'s':'');
+    m.style.color = col; }
+  else m.textContent = '';
+  return {view, fillEnd, mark, need: canNeed ? e.need : null};
+}
+// Animation de livraison : remplissage, reflet limité au plein, gerbe au franchissement du besoin
+function livraisonAnim(from, to){
+  if(!animOn() || view!=='home'){ drawStock(to); return; }
+  stockAnim = true; const t0 = performance.now(), dur = 1300;
+  const need0 = estFor(from).need; let crossed = need0==null || from >= need0;
+  const card = $('stockCard'); card.scrollIntoView({block:'nearest', behavior:'smooth'});
+  (function f(now){
+    const k = Math.min(1,(now-t0)/dur), ez = 1-Math.pow(1-k,3), v = from + (to-from)*ez;
+    const info = drawStock(v);
+    if(!crossed && need0!=null && v >= need0){ crossed = true; stockReward(info); }
+    if(k<1) requestAnimationFrame(f);
+    else { stockAnim = false; const fin = drawStock(to); $('stockN').animate([{transform:'scale(1)'},{transform:'scale(1.15)'},{transform:'scale(1)'}],{duration:300}); stockShine(fin); }
+  })(t0);
+}
+function fxLayer(){ const g = $('gSvg').getBoundingClientRect(), svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  Object.assign(svg.style,{position:'fixed',left:'0',top:'0',width:'100vw',height:'100vh',pointerEvents:'none',overflow:'visible',zIndex:8}); document.body.appendChild(svg); return {svg, g}; }
+function stockShine(info){
+  if(!info || !(info.fillEnd>20)) return; const {svg, g} = fxLayer(), NSs='http://www.w3.org/2000/svg';
+  const defs = document.createElementNS(NSs,'defs'), cp = document.createElementNS(NSs,'clipPath'); cp.id = 'shineClip'+Date.now();
+  const r = document.createElementNS(NSs,'rect'); Object.entries({x:g.left,y:g.top+6,width:info.fillEnd,height:14,rx:info.view==='besoin'?7:3}).forEach(([k,v])=>r.setAttribute(k,v));
+  cp.appendChild(r); defs.appendChild(cp); svg.appendChild(defs);
+  const grp = document.createElementNS(NSs,'g'); grp.setAttribute('clip-path','url(#'+cp.id+')'); svg.appendChild(grp);
+  const s = document.createElementNS(NSs,'rect'); Object.entries({x:g.left-40,y:g.top+6,width:40,height:14,fill:'#fff',opacity:.45}).forEach(([k,v])=>s.setAttribute(k,v)); grp.appendChild(s);
+  s.animate([{transform:'translateX(0)'},{transform:'translateX('+(info.fillEnd+40)+'px)'}],{duration:Math.max(300, info.fillEnd*1.5),easing:'ease-in-out',fill:'forwards'}).onfinish=()=>svg.remove();
+}
+function stockReward(info){
+  const {svg, g} = fxLayer(), NSs='http://www.w3.org/2000/svg', R=(a,b)=>a+Math.random()*(b-a);
+  const x = g.left + (info && info.view==='besoin' && info.mark!=null ? info.mark : g.width-6), y = g.top + 12;
+  $('stockCard').animate([{transform:'scale(1)'},{transform:'scale(1.015)'},{transform:'scale(1)'}],{duration:260});
+  for(let i=0;i<26;i++){ const a=R(-Math.PI*.95,-Math.PI*.05), d=R(40,110), isP=Math.random()<.65;
+    const e = document.createElementNS(NSs, isP?'rect':'path');
+    if(isP){ Object.entries({width:9,height:4.5,rx:2.2,fill:Math.random()<.5?'#b5814f':'#8a6a4a',stroke:'#7a5230','stroke-width':.8}).forEach(([k,v])=>e.setAttribute(k,v)); }
+    else { e.setAttribute('d','M0,-4 L2.6,0 L0,4 L-2.6,0Z'); e.setAttribute('fill', i%2?'#ffd478':'#2f9e44'); }
+    svg.appendChild(e);
+    e.animate([{transform:`translate(${x}px,${y}px) rotate(0)`,opacity:1},{transform:`translate(${x+Math.cos(a)*d}px,${y+Math.sin(a)*d}px) rotate(${R(-220,220)}deg)`,opacity:1,offset:.55},{transform:`translate(${x+Math.cos(a)*d*1.1}px,${y+Math.sin(a)*d+50}px) rotate(${R(-320,320)}deg)`,opacity:0}],{duration:R(800,1100),easing:'cubic-bezier(.2,.7,.4,1)',fill:'forwards'}); }
+  const t = document.createElementNS(NSs,'text'); Object.entries({x:Math.min(innerWidth-80,Math.max(80,x)),y:y-30,'text-anchor':'middle',fill:'#2f9e44','font-size':'15','font-weight':'800',stroke:(getComputedStyle(document.body).getPropertyValue('--card').trim()||'#fff'),'stroke-width':5,'paint-order':'stroke','stroke-linejoin':'round'}).forEach(([k,v])=>t.setAttribute(k,v)); t.textContent='Saison couverte !'; svg.appendChild(t);
+  t.animate([{transform:'translateY(4px)',opacity:0},{transform:'translateY(0)',opacity:1,offset:.2},{transform:'translateY(-12px)',opacity:0}],{duration:1600,fill:'forwards'});
+  setTimeout(()=>svg.remove(), 1700);
+}
+/* ---------- Easter egg : livraison en voiture ---------- */
+const CAR_IMG = 'data:image/webp;base64,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';
+let verTaps = 0, verT = null;
+function verTap(){ verTaps++; clearTimeout(verT); verT = setTimeout(()=>verTaps=0, 1500);
+  if(verTaps >= 5){ verTaps = 0; cfg.twUnlocked = true; saveCfg(); $('twRow').style.display = 'flex'; toast('Option secrète débloquée'); } }
+function livraisonVoiture(from, to){
+  const card = $('stockCard'); card.scrollIntoView({block:'nearest', behavior:'smooth'});
+  stockAnim = true; drawStock(from);
+  setTimeout(()=>{
+    const c = card.getBoundingClientRect(), n = $('stockN').getBoundingClientRect(), NSv = 'http://www.w3.org/2000/svg', R = (a,b)=>a+Math.random()*(b-a);
+    const svg = document.createElementNS(NSv,'svg');
+    Object.assign(svg.style,{position:'fixed',left:'0',top:'0',width:'100vw',height:'100vh',pointerEvents:'none',overflow:'visible',zIndex:8}); document.body.appendChild(svg);
+    const W = 140, H = Math.round(W*162/360), ground = c.bottom - 6, stopX = Math.min(c.left + 110, c.right - W - 10), y0 = ground - H;
+    const car = document.createElementNS(NSv,'image'); car.setAttribute('href', CAR_IMG); car.setAttribute('width', W); car.setAttribute('height', H); svg.appendChild(car);
+    const puff = (x, y) => { const p = document.createElementNS(NSv,'circle'); p.setAttribute('r', R(3,5)); p.setAttribute('fill', '#b4b2a9'); svg.appendChild(p);
+      p.animate([{transform:`translate(${x}px,${y}px) scale(1)`,opacity:.8},{transform:`translate(${x-R(14,24)}px,${y-R(6,14)}px) scale(2.2)`,opacity:0}],{duration:600,fill:'forwards'}).onfinish=()=>p.remove(); };
+    const bag = () => { const g = document.createElementNS(NSv,'g'); g.innerHTML = `<path d="M-9,-22 L9,-22 L10,0 Q10,2 8,2 L-8,2 Q-10,2 -10,0 Z" fill="#8a6a4a"/><path d="M-9,-22 L9,-22 L8,-19 L-8,-19 Z" fill="#6b4f35"/><rect x="-6" y="-15" width="12" height="8" rx="1.5" fill="#ffd478"/>`; svg.appendChild(g); return g; };
+    const t0 = performance.now(), IN = 750, STAY = 1350, OUT = 700; let x = -W - 20, lastPuff = 0, started = false, bagsOut = 0;
+    const nb = Math.min(8, Math.max(3, Math.round((to-from)/8)));
+    (function f(now){
+      const t = now - t0;
+      if(t < IN){ const k = t/IN, e = 1-Math.pow(1-k,3); x = -W-20 + (stopX + W + 20)*e; }
+      else if(t < IN+STAY){ x = stopX; }
+      else { const k = Math.min(1,(t-IN-STAY)/OUT); x = stopX + (innerWidth - stopX + 40)*k*k; }
+      const bob = (t < IN || t > IN+STAY) ? Math.sin(t/45)*1.2 : (t < IN+180 ? Math.sin((t-IN)/30)*2*(1-(t-IN)/180) : 0);
+      car.setAttribute('x', x); car.setAttribute('y', y0 + bob);
+      if((t < IN || t > IN+STAY) && t - lastPuff > 90){ lastPuff = t; puff(x+4, ground-9); }
+      // les sacs sautent du coffre vers le compteur
+      if(t > IN+150 && bagsOut < nb && t > IN+150+bagsOut*120){ bagsOut++;
+        const g = bag(), sx = x + 14, sy = y0 + 10, ex = n.left + n.width/2, ey = n.top + n.height/2;
+        g.animate([{transform:`translate(${sx}px,${sy}px) scale(.9) rotate(0deg)`},{transform:`translate(${(sx+ex)/2}px,${Math.min(sy,ey)-50}px) scale(.8) rotate(-25deg)`,offset:.5},{transform:`translate(${ex}px,${ey}px) scale(.25) rotate(-60deg)`,opacity:.3}],{duration:520,easing:'ease-in',fill:'forwards'}).onfinish=()=>g.remove(); }
+      if(!started && t > IN+250){ started = true; stockAnim = false; livraisonAnim(from, to); }
+      if(t < IN+STAY+OUT+100) requestAnimationFrame(f); else svg.remove();
+    })(t0);
+  }, 200);
+}
 /* ---------- Radiateur dessiné : ailettes, vagues de chaleur, gouttes ---------- */
 const FIN_OFF='var(--finOff)', FIN_ON='#2b7de9';
 let radBusy=false, waveTimer=null;
@@ -529,10 +852,11 @@ function sacAnim(btn, tx, ty){
   }
   requestAnimationFrame(frame);
 }
-function addSac(e){
+function addSac(e, n){
   if(animBusy) return; // évite un double appui pendant l'animation
-  const ev = addEvent({t:'sac', ts:Date.now(), n:1});
-  toast('1 sac ajouté · stock '+stockNow(), 'Annuler', ()=>updEvent(ev.id,{del:true}));
+  n = n || 1;
+  const ev = addEvent({t:'sac', ts:Date.now(), n});
+  toast((n>1 ? n+' sacs ajoutés' : '1 sac ajouté')+' · stock '+stockNow(), 'Annuler', ()=>updEvent(ev.id,{del:true}));
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(cfg.anim!==false && !reduce){
     const btn = $('btnSac'), r = btn.getBoundingClientRect();
@@ -548,8 +872,21 @@ function toast(msg, btn, fn){
   clearTimeout(undoTimer); undoTimer = setTimeout(()=>$('toast').classList.remove('show'), 5000);
 }
 
+// Appui long sur le bouton : plusieurs sacs d'un coup
+function sheetMulti(){
+  openSheet(`<h3>Combien de sacs dans le poêle ?</h3><div class="chips" style="margin-top:12px">${[2,3,4,5].map(n=>`<button onclick="closeSheet();addSac(null,${n})">${n} sacs</button>`).join('')}</div>`, [{label:'Annuler'}]);
+}
+(function(){ const b = $('btnSac'); let t = null, lp = false;
+  b.addEventListener('touchstart', ()=>{ lp = false; t = setTimeout(()=>{ lp = true; sheetMulti(); }, 550); }, {passive:true});
+  ['touchend','touchmove','touchcancel'].forEach(k=>b.addEventListener(k, ()=>clearTimeout(t), {passive:true}));
+  b.addEventListener('contextmenu', e=>e.preventDefault());
+  b.addEventListener('click', e=>{ if(lp){ e.stopImmediatePropagation(); e.preventDefault(); lp = false; } }, true);
+})();
+
 /* ---------- Fenêtres ---------- */
+let sheetAt = 0;
 function openSheet(html, buttons){
+  $('toast').classList.remove('show'); sheetAt = Date.now();
   $('sheet').innerHTML = html + '<div class="btns" id="sheetBtns"></div>';
   buttons.forEach(b=>{
     const el = document.createElement('button');
@@ -560,16 +897,17 @@ function openSheet(html, buttons){
   $('sheetBg').classList.add('open');
 }
 function closeSheet(){ $('sheetBg').classList.remove('open'); }
-$('sheetBg').addEventListener('click', e=>{ if(e.target.id==='sheetBg') closeSheet(); });
+$('sheetBg').addEventListener('click', e=>{ if(e.target.id==='sheetBg' && Date.now()-sheetAt > 450) closeSheet(); }); // ignore le « clic » qui suit un appui long
 
 function lastAchat(){ const a = alive().filter(e=>e.t==='achat'); return a[a.length-1]; }
-function sheetAchat(ev){
+function sheetAchat(ev, pre){
   const la = lastAchat();
-  const n = ev ? ev.n : (la ? la.n : 66), p = ev ? ev.p : (la ? la.p : '');
+  const n = ev ? ev.n : (pre && pre.n ? pre.n : (la ? la.n : 66)), p = ev ? ev.p : (la ? la.p : '');
   openSheet(`<h3>${ev?'Modifier l\'achat':'Livraison de sacs'}</h3>
     <label>Nombre de sacs</label><input id="fN" type="number" inputmode="numeric" min="1" value="${n}">
+    ${ev?'':'<div class="chips"><button onclick="$(\'fN\').value=10;$(\'fN\').oninput()">10</button><button onclick="$(\'fN\').value=33;$(\'fN\').oninput()">33</button><button onclick="$(\'fN\').value=66;$(\'fN\').oninput()">66 (palette)</button></div>'}
     <label>Prix d'un sac (€)</label><input id="fP" type="number" inputmode="decimal" step="0.01" min="0" value="${p}" placeholder="ex. 6,90">
-    <label>Date</label><input id="fD" type="datetime-local" value="${toInput(ev?ev.ts:Date.now())}">
+    <label>Date</label><input id="fD" type="datetime-local" value="${toInput(ev?ev.ts:(pre&&pre.ts)||Date.now())}">
     <div class="total" id="fT"></div>`,
     [{label:'Annuler'}, ...(ev?[{label:'Supprimer',cls:'red',fn:()=>delAsk(ev)}]:[]),
      {label:'Enregistrer', cls:'fire', fn:()=>{
@@ -577,7 +915,7 @@ function sheetAchat(ev){
         if(!(nn>0)){ alert('Indique le nombre de sacs'); return false; }
         if(!(pp>=0)){ alert('Indique le prix d\'un sac'); return false; }
         const o = {n:nn, p:pp, ts:fromInput($('fD').value)};
-        if(ev) updEvent(ev.id, o); else { addEvent(Object.assign({t:'achat'}, o)); toast(nn+' sacs ajoutés au stock'); }
+        if(ev) updEvent(ev.id, o); else { const before = stockNow(); stockAnim = true; addEvent(Object.assign({t:'achat'}, o)); stockAnim = false; drawStock(before); toast(nn+' sacs ajoutés au stock'); setTimeout(()=>(cfg.twingo && animOn() && view==='home' ? livraisonVoiture : livraisonAnim)(before, stockNow()), 250); }
      }}]);
   const upd = ()=>{ const nn=parseInt($('fN').value)||0, pp=parseFloat(String($('fP').value).replace(',','.'))||0; $('fT').textContent = pp? 'Total : '+eur(nn*pp) : ''; };
   $('fN').oninput = upd; $('fP').oninput = upd; upd();
@@ -591,7 +929,14 @@ function sheetInventaire(ev){
      {label:'Enregistrer', cls:'fire', fn:()=>{
         const nn = parseInt($('fN').value); if(!(nn>=0)){ alert('Nombre invalide'); return false; }
         const o = {n:nn, ts:fromInput($('fD').value)};
-        if(ev) updEvent(ev.id,o); else addEvent(Object.assign({t:'inv'},o));
+        if(ev){ updEvent(ev.id,o); return; }
+        const cur = stockNow();
+        if(nn > cur){ const d = nn - cur;
+          openSheet(`<h3>Le stock augmente de ${d} sac${d>1?'s':''}</h3><div class="note">C'est une livraison ? Elle sera enregistrée avec son prix, pour les dépenses et les statistiques.</div>`,
+            [{label:'Non, correction', fn:()=>{ addEvent(Object.assign({t:'inv'},o)); }},
+             {label:'Oui, livraison', cls:'fire', fn:()=>{ setTimeout(()=>sheetAchat(null,{n:d, ts:o.ts}), 50); }}]);
+          return false; }
+        addEvent(Object.assign({t:'inv'},o));
      }}]);
 }
 function sheetRad(ev){
@@ -891,7 +1236,7 @@ function renderPoele(){
       <div class="sub">À faire avant le <b>${fd(en.due)}</b> · dernier : ${POELE_K[en.ref.k].toLowerCase()} le ${fd(en.ref.ts)}</div>
       <button class="btn ${st==='ok'?'ghost':'fire'} wide" onclick="sheetPoele(null,'entretien')">Entretien fait</button>`;
   }
-  $('pMarque').value = S().marque||''; $('pModele').value = S().modele||''; $('pInterv').value = S().entretienMois||12;
+  $('pMarque').value = S().marque||''; $('pModele').value = S().modele||''; $('pInterv').value = S().entretienMois||12; $('pEstH').value = S().estHiver||''; $('pFin').value = S().finMois!=null ? S().finMois : 3;
   const ins = poeleEvents().find(e=>e.k==='install');
   $('pInstall').textContent = ins ? 'Installé le '+fd(ins.ts) : '';
   // saisons
@@ -1003,7 +1348,7 @@ function editEv(id){
 function renderSet(){
   $('sQui').value = cfg.qui||''; $('sSeuil').value = S().seuil; $('sPoids').value = poids();
   $('sOwner').value = cfg.owner||''; $('sRepo').value = cfg.repo||''; $('sToken').value = cfg.token||'';
-  $('ver').textContent = VERSION; $('sAnim').checked = cfg.anim!==false;
+  $('ver').textContent = VERSION; $('twRow').style.display = cfg.twUnlocked ? 'flex' : 'none'; $('sTw').checked = !!cfg.twingo; $('sAnim').checked = cfg.anim!==false;
   $('syncInfo').textContent = cfg.lastSync ? 'Dernière synchro : '+dayLabel(cfg.lastSync)+' à '+hm(cfg.lastSync) : '';
 }
 function saveSync(){
